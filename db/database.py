@@ -22,7 +22,12 @@ async def get_admin_by_tg_id(tg_id: int):
 async def get_start_message():
     col = db_connection[COLLECTION_MESSAGES]
     res = await col.find_one(filter={'_id': 'start_message'})
-    return res['text']
+    if res:
+        return res['text']
+    else:
+        text = "Приветствие"
+        await col.insert_one({"_id": "start_message", "text": text})
+        return text
 
 
 async def edit_start_message(text):
