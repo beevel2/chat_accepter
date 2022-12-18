@@ -7,6 +7,7 @@ import db.models as models
 from states import AppStates
 
 from settings import bot
+from utils import replace_in_message
 
 
 async def start_command(update: types.ChatJoinRequest):
@@ -21,6 +22,10 @@ async def start_command(update: types.ChatJoinRequest):
         await db.create_user(user)
 
     text = await db.get_start_message()
+    name = update.from_user.full_name
+    if not name:
+        name = update.from_user.username
+    text = replace_in_message(text, 'USER', name)
 
     await update.approve()
     await bot.send_message(chat_id=update.from_user.id, text=text, parse_mode=types.ParseMode.HTML)
