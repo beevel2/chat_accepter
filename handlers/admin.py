@@ -10,15 +10,123 @@ from settings import bot
 import keyboards as kb
 
 
-async def edit_start_message_command(
+async def edit_start_message1_command(
         message: types.Message,
         state: FSMContext,
         is_admin: bool
     ):
     if not is_admin:
         return
-    await state.set_state(AppStates.STATE_EDIT_MESSAGE)
-    await message.answer('Введите приветственное сообщение!')
+    await state.set_state(AppStates.STATE_MESSAGE1_VIDEO)
+    await state.set_data({'message': 1})
+    await message.answer('Отправьте видео сообщение!')
+
+
+async def get_video_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+):
+    if not is_admin:
+        return
+    await state.update_data({'file_id': message.video_note.file_id})
+    await state.set_state(AppStates.STATE_MESSAGE_BUTTONS)
+    await message.answer('Введите кнопки')
+
+
+async def edit_start_message2_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+    ):
+    if not is_admin:
+        return
+    await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
+    await state.set_data({'message': 2})
+    await message.answer('Отправьте сообщение!')
+
+
+async def edit_start_message3_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+    ):
+    if not is_admin:
+        return
+    await state.set_state(AppStates.STATE_MESSAGE3_MESSAGE)
+    await state.set_data({'message': 3})
+    await message.answer('Отправьте сообщение!')
+
+
+async def get_message_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+):
+    if not is_admin:
+        return
+    data = {
+        'text': '',
+        'photos': [],
+        'video_id': None,
+        'video_note_id': None
+    }
+    try:
+        data['text'] = message.html_text
+    except Exception:
+        pass
+    if message.photo:
+        data['photos'] = [p.file_id for p in message.photo]
+    elif message.video:
+        data.video_id = message.video.file_id
+    elif message.video_note:
+        data.video_note_id = message.video_note.file_id
+    await state.update_data({'data': data})
+    await state.set_state(AppStates.STATE_MESSAGE_BUTTONS)
+    await message.answer('Введите кнопки')
+
+
+async def get_buttons_command(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+    if not is_admin:
+        return
+    buttons = []
+    if message.text != '0':
+        for s in message.text.split('\n'):
+            if len(s.split('-')) < 2: continue
+            _text = s.split('-')[0]
+            _url = '-'.join(s.split('-')[1:])
+            buttons.append({
+                "text": _text.strip(),
+                "url": _url.strip()
+            })
+    _state = await state.get_data()
+    num_msg = _state['message']
+    if num_msg == 1:
+        data = {
+            'file_id': _state['file_id'],
+            'buttons': buttons
+        }
+        await db.edit_message('start_message_1', data)
+    elif num_msg == 2:
+        data = {
+            'data': _state['data'],
+            'buttons': buttons
+        }
+        await db.edit_message('start_message_2', data)
+
+    else:
+        data = {
+            'data': _state['data'],
+            'buttons': buttons
+        }
+        await db.edit_message('start_message_3', data)
+
+    await state.reset_data()
+    await state.reset_state()
 
 
 async def edit_start_message_confirm_command(
@@ -31,7 +139,7 @@ async def edit_start_message_confirm_command(
     text = message.html_text
     await db.edit_start_message(text)
     await state.reset_state()
-        
+
 
 async def mass_send_command(
         message: types.Message,
@@ -108,3 +216,15 @@ async def mass_send_process_command(
     except Exception:
         await state.reset_data()
         await state.reset_state()
+
+
+async def stats_command(
+        message: types.Message,
+        is_admin: bool
+    ):
+    if not is_admin: 
+        return
+
+    users_count = await db.get_count_users()
+    await message.answer(f'Пользователей в боте: {users_count}')
+    
