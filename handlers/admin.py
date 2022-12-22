@@ -128,6 +128,8 @@ async def get_buttons_command(
     await state.reset_data()
     await state.reset_state()
 
+    await message.answer('Сообщение принято! ✅')
+
 
 async def edit_start_message_confirm_command(
         message: types.Message,
