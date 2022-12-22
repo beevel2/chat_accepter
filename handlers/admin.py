@@ -216,7 +216,7 @@ async def mass_send_process_command(
             await state.reset_data()
             await state.reset_state()
     except Exception as e:
-        print('ОШИБКА MASS SEND BIG: {e}')
+        print(f'ОШИБКА MASS SEND BIG: {e}')
         await state.reset_data()
         await state.reset_state()
 
