@@ -1,4 +1,5 @@
 import asyncio
+from typing import List, Optional
 
 from aiogram import types
 from aiogram.dispatcher import FSMContext
@@ -17,8 +18,13 @@ async def edit_start_message1_command(
     ):
     if not is_admin:
         return
+    _channel_id = message.text.split('_')[-1]
+    _channel_in_db = await db.get_channel_by_id(int(_channel_id))
+    if not _channel_in_db:
+        await message.answer(f'Канал ID: {_channel_id} - не найден!')
+        return
     await state.set_state(AppStates.STATE_MESSAGE1_VIDEO)
-    await state.set_data({'message': 1})
+    await state.set_data({'message': 1, 'channel_id': int(_channel_id)})
     await message.answer('Отправьте видео сообщение!')
 
 
@@ -41,8 +47,13 @@ async def edit_start_message2_command(
     ):
     if not is_admin:
         return
+    _channel_id = message.text.split('_')[-1]
+    _channel_in_db = await db.get_channel_by_id(int(_channel_id))
+    if not _channel_in_db:
+        await message.answer(f'Канал ID: {_channel_id} - не найден!')
+        return
     await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
-    await state.set_data({'message': 2})
+    await state.set_data({'message': 2, 'channel_id': int(_channel_id)})
     await message.answer('Отправьте сообщение!')
 
 
@@ -53,15 +64,21 @@ async def edit_start_message3_command(
     ):
     if not is_admin:
         return
+    _channel_id = message.text.split('_')[-1]
+    _channel_in_db = await db.get_channel_by_id(int(_channel_id))
+    if not _channel_in_db:
+        await message.answer(f'Канал ID: {_channel_id} - не найден!')
+        return
     await state.set_state(AppStates.STATE_MESSAGE3_MESSAGE)
-    await state.set_data({'message': 3})
+    await state.set_data({'message': 3, 'channel_id': int(_channel_id)})
     await message.answer('Отправьте сообщение!')
 
 
 async def get_message_command(
         message: types.Message,
         state: FSMContext,
-        is_admin: bool
+        is_admin: bool,
+        album: Optional[List[types.Message]] = None
 ):
     if not is_admin:
         return
@@ -75,8 +92,8 @@ async def get_message_command(
         data['text'] = message.html_text
     except Exception:
         pass
-    if message.photo:
-        data['photos'] = [p.file_id for p in message.photo]
+    if album:
+        data['photos'] = [p.photo[-1].file_id for p in album]
     elif message.video:
         data.video_id = message.video.file_id
     elif message.video_note:
@@ -111,12 +128,14 @@ async def get_buttons_command(
             'buttons': buttons
         }
         await db.edit_message('start_message_1', data)
+        await db.update_channel_data(_state['channel_id'], 'message_1', data)
     elif num_msg == 2:
         data = {
             'data': _state['data'],
             'buttons': buttons
         }
         await db.edit_message('start_message_2', data)
+        await db.update_channel_data(_state['channel_id'], 'message_2', data)
 
     else:
         data = {
@@ -124,6 +143,7 @@ async def get_buttons_command(
             'buttons': buttons
         }
         await db.edit_message('start_message_3', data)
+        await db.update_channel_data(_state['channel_id'], 'message_3', data)
 
     await state.reset_data()
     await state.reset_state()
@@ -150,7 +170,13 @@ async def mass_send_command(
     ):
     if not is_admin:
         return
+    _channel_id = message.text.split('_')[-1]
+    _channel_in_db = await db.get_channel_by_id(int(_channel_id))
+    if not _channel_in_db:
+        await message.answer(f'Канал ID: {_channel_id} - не найден!')
+        return
     await state.set_state(AppStates.STATE_MASS_SEND_MESSAGE)
+    await state.set_data({'channel_id': int(_channel_id)})
     await message.answer('Введите сообщение для рассылки')
 
 
@@ -164,9 +190,11 @@ async def mass_send_process_command(
     _state = await state.get_state()
     try:
         if _state == AppStates.STATE_MASS_SEND_MESSAGE:
-            await state.set_data(
+            await state.update_data(
                 {
                     "photo_id": message.photo[0].file_id if message.photo else None,
+                    "video_id": message.video.file_id if message.video else None,
+                    "animation_id": message.animation.file_id if message.animation else None,
                     "text": message.html_text
                 }
             )
@@ -186,7 +214,7 @@ async def mass_send_process_command(
                         "url": _url.strip()
                     })
             
-            user_ids = await db.get_id_all_users()
+            user_ids = await db.get_id_all_users(_state_data['channel_id'])
             for _user in user_ids:
                 _kb = kb.kb_mass_send(buttons) if buttons else None
                 try:
@@ -194,6 +222,22 @@ async def mass_send_process_command(
                         await bot.send_photo(
                             _user,
                             _state_data['photo_id'],
+                            caption=_state_data['text'],
+                            parse_mode=types.ParseMode.HTML,
+                            reply_markup=_kb
+                        )
+                    elif _state_data['video_id']:
+                        await bot.send_video(
+                            _user,
+                            _state_data['video_id'],
+                            caption=_state_data['text'],
+                            parse_mode=types.ParseMode.HTML,
+                            reply_markup=_kb
+                        )
+                    elif _state_data['animation_id']:
+                        await bot.send_animation(
+                            _user,
+                            _state_data['animation_id'],
                             caption=_state_data['text'],
                             parse_mode=types.ParseMode.HTML,
                             reply_markup=_kb
@@ -231,3 +275,69 @@ async def stats_command(
     users_count = await db.get_count_users()
     await message.answer(f'Пользователей в боте: {users_count}')
     
+
+async def add_channel_step1_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+    ):
+    if not is_admin:
+        return
+    await message.answer('Введите номер канала')
+    await state.set_state(AppStates.STATE_ADD_CHANNEL_ID)
+
+
+async def add_channel_step2_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+    ):
+    if not is_admin:
+        return
+
+    if not message.text.isdigit():
+        await message.answer('ID канала должно быть число')
+        return
+    
+    _channel_in_db = await db.get_channel_by_id(int(message.text))
+    if _channel_in_db:
+        await message.answer(f'Канал ID: {message.text} - уже существует!')
+        return
+
+    await state.set_data({'channel_id': int(message.text)})
+    await message.answer('Введите JSON ID канала')
+    await state.set_state(AppStates.STATE_ADD_CHANNEL_TG_ID)
+
+
+async def add_channel_step3_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+    ):
+    if not is_admin:
+        return
+        
+    await state.update_data({'tg_id': message.text})
+    await message.answer('Введите название ссылки')
+    await state.set_state(AppStates.STATE_ADD_CHANNEL_LINK_NAME)
+
+
+async def add_channel_step4_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+    ):
+    if not is_admin:
+        return
+    
+    _data = await state.get_data()
+    await db.create_channel(
+        models.ChannelModel(
+            channel_id=_data['channel_id'],
+            tg_id=_data['tg_id'],
+            link_name=message.text
+        )
+    )
+    await message.answer('Канал успешно добавлен ✅')
+    await state.reset_data()
+    await state.reset_state()
