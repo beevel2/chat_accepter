@@ -11,7 +11,36 @@ from settings import bot
 import keyboards as kb
 
 
-async def edit_start_message1_command(
+# async def edit_start_message1_command(
+#         message: types.Message,
+#         state: FSMContext,
+#         is_admin: bool
+#     ):
+#     if not is_admin:
+#         return
+#     _channel_id = message.text.split('_')[-1]
+#     _channel_in_db = await db.get_channel_by_id(int(_channel_id))
+#     if not _channel_in_db:
+#         await message.answer(f'Канал ID: {_channel_id} - не найден!')
+#         return
+#     await state.set_state(AppStates.STATE_MESSAGE1_VIDEO)
+#     await state.set_data({'message': 1, 'channel_id': int(_channel_id)})
+#     await message.answer('Отправьте видео сообщение!')
+
+
+# async def get_video_command(
+#         message: types.Message,
+#         state: FSMContext,
+#         is_admin: bool
+# ):
+#     if not is_admin:
+#         return
+#     await state.update_data({'file_id': message.video_note.file_id})
+#     await state.set_state(AppStates.STATE_MESSAGE_BUTTONS)
+#     await message.answer('Введите кнопки')
+
+
+async def edit_start_message_command(
         message: types.Message,
         state: FSMContext,
         is_admin: bool
@@ -19,59 +48,32 @@ async def edit_start_message1_command(
     if not is_admin:
         return
     _channel_id = message.text.split('_')[-1]
+    _mes_num = message.text.split('_')[-2]
     _channel_in_db = await db.get_channel_by_id(int(_channel_id))
     if not _channel_in_db:
         await message.answer(f'Канал ID: {_channel_id} - не найден!')
         return
-    await state.set_state(AppStates.STATE_MESSAGE1_VIDEO)
-    await state.set_data({'message': 1, 'channel_id': int(_channel_id)})
-    await message.answer('Отправьте видео сообщение!')
+    if _mes_num.isdigit and int(_mes_num) in [1, 2, 3]:
+        await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
+        await state.set_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
+        await message.answer('Отправьте сообщение!')
 
 
-async def get_video_command(
-        message: types.Message,
-        state: FSMContext,
-        is_admin: bool
-):
-    if not is_admin:
-        return
-    await state.update_data({'file_id': message.video_note.file_id})
-    await state.set_state(AppStates.STATE_MESSAGE_BUTTONS)
-    await message.answer('Введите кнопки')
-
-
-async def edit_start_message2_command(
-        message: types.Message,
-        state: FSMContext,
-        is_admin: bool
-    ):
-    if not is_admin:
-        return
-    _channel_id = message.text.split('_')[-1]
-    _channel_in_db = await db.get_channel_by_id(int(_channel_id))
-    if not _channel_in_db:
-        await message.answer(f'Канал ID: {_channel_id} - не найден!')
-        return
-    await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
-    await state.set_data({'message': 2, 'channel_id': int(_channel_id)})
-    await message.answer('Отправьте сообщение!')
-
-
-async def edit_start_message3_command(
-        message: types.Message,
-        state: FSMContext,
-        is_admin: bool
-    ):
-    if not is_admin:
-        return
-    _channel_id = message.text.split('_')[-1]
-    _channel_in_db = await db.get_channel_by_id(int(_channel_id))
-    if not _channel_in_db:
-        await message.answer(f'Канал ID: {_channel_id} - не найден!')
-        return
-    await state.set_state(AppStates.STATE_MESSAGE3_MESSAGE)
-    await state.set_data({'message': 3, 'channel_id': int(_channel_id)})
-    await message.answer('Отправьте сообщение!')
+# async def edit_start_message3_command(
+#         message: types.Message,
+#         state: FSMContext,
+#         is_admin: bool
+#     ):
+#     if not is_admin:
+#         return
+#     _channel_id = message.text.split('_')[-1]
+#     _channel_in_db = await db.get_channel_by_id(int(_channel_id))
+#     if not _channel_in_db:
+#         await message.answer(f'Канал ID: {_channel_id} - не найден!')
+#         return
+#     await state.set_state(AppStates.STATE_MESSAGE3_MESSAGE)
+#     await state.set_data({'message': 3, 'channel_id': int(_channel_id)})
+#     await message.answer('Отправьте сообщение!')
 
 
 async def get_message_command(
@@ -86,18 +88,24 @@ async def get_message_command(
         'text': '',
         'photos': [],
         'video_id': None,
-        'video_note_id': None
+        'video_note_id': None,
+        'animation_id': None,
+        'voice_id': None
     }
     try:
         data['text'] = message.html_text
     except Exception:
         pass
     if album:
-        data['photos'] = [p.photo[-1].file_id for p in album]
+        data['photos'] = [p.photo[-1].file_id for p in album if p.photo]
     elif message.video:
-        data.video_id = message.video.file_id
+        data['video_id'] = message.video.file_id
     elif message.video_note:
-        data.video_note_id = message.video_note.file_id
+        data['video_note_id'] = message.video_note.file_id
+    elif message.animation:
+        data['animation'] = message.animation.file_id
+    elif message.voice:
+        data['voice_id'] = message.voice.file_id
     await state.update_data({'data': data})
     await state.set_state(AppStates.STATE_MESSAGE_BUTTONS)
     await message.answer('Введите кнопки')
@@ -122,28 +130,36 @@ async def get_buttons_command(
             })
     _state = await state.get_data()
     num_msg = _state['message']
-    if num_msg == 1:
-        data = {
-            'file_id': _state['file_id'],
-            'buttons': buttons
-        }
-        await db.edit_message('start_message_1', data)
-        await db.update_channel_data(_state['channel_id'], 'message_1', data)
-    elif num_msg == 2:
-        data = {
-            'data': _state['data'],
-            'buttons': buttons
-        }
-        await db.edit_message('start_message_2', data)
-        await db.update_channel_data(_state['channel_id'], 'message_2', data)
 
-    else:
-        data = {
-            'data': _state['data'],
-            'buttons': buttons
-        }
-        await db.edit_message('start_message_3', data)
-        await db.update_channel_data(_state['channel_id'], 'message_3', data)
+    data = {
+        'data': _state['data'],
+        'buttons': buttons
+    }
+
+    await db.update_channel_data(_state['channel_id'], f"message_{_state['message']}", data)
+
+    # if num_msg == 1:
+    #     data = {
+    #         'file_id': _state['file_id'],
+    #         'buttons': buttons
+    #     }
+    #     await db.edit_message('start_message_1', data)
+    #     await db.update_channel_data(_state['channel_id'], 'message_1', data)
+    # elif num_msg == 2:
+    #     data = {
+    #         'data': _state['data'],
+    #         'buttons': buttons
+    #     }
+    #     await db.edit_message('start_message_2', data)
+    #     await db.update_channel_data(_state['channel_id'], 'message_2', data)
+
+    # else:
+    #     data = {
+    #         'data': _state['data'],
+    #         'buttons': buttons
+    #     }
+    #     await db.edit_message('start_message_3', data)
+    #     await db.update_channel_data(_state['channel_id'], 'message_3', data)
 
     await state.reset_data()
     await state.reset_state()
@@ -195,6 +211,7 @@ async def mass_send_process_command(
                     "photo_id": message.photo[0].file_id if message.photo else None,
                     "video_id": message.video.file_id if message.video else None,
                     "animation_id": message.animation.file_id if message.animation else None,
+                    "voice_id": message.voice.file_id if message.voice else None,
                     "text": message.html_text
                 }
             )
@@ -238,6 +255,14 @@ async def mass_send_process_command(
                         await bot.send_animation(
                             _user,
                             _state_data['animation_id'],
+                            caption=_state_data['text'],
+                            parse_mode=types.ParseMode.HTML,
+                            reply_markup=_kb
+                        )
+                    elif _state_data['voice_id']:
+                        await bot.send_voice(
+                            _user,
+                            _state_data['voice_id'],
                             caption=_state_data['text'],
                             parse_mode=types.ParseMode.HTML,
                             reply_markup=_kb
