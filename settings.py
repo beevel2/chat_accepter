@@ -7,12 +7,13 @@ from motor.motor_asyncio import (AsyncIOMotorClient, AsyncIOMotorDatabase)
 
 TOKEN=''
 
-MONGO_DB = 'telegram-bot2'
+MONGO_DB = ''
 MONGO_URI = f'mongodb://localhost:27017'
 
 COLLECTION_USER = 'users'
 COLLECTION_ADMIN = 'admins'
 COLLECTION_MESSAGES = 'messages'
+COLLECTION_CHANNELS = 'channels'
 
 
 def _connect_to_db() -> AsyncIOMotorDatabase:
