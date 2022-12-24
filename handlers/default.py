@@ -44,7 +44,7 @@ async def send_start_message(msg, chat_id, name):
 
 
 async def start_command(update: types.ChatJoinRequest):
-    _channel_id: -1
+    _channel_id = -1
     _channel = await db.get_channel_by_link_name(update.invite_link.name)
     if _channel:
         _channel_id = _channel['channel_id']
