@@ -18,6 +18,11 @@ async def send_start_message(msg, chat_id, name):
     _text = replace_in_message(msg['data']['text'], 'USER', name) 
     if msg['data']['video_note_id']:
         await bot.send_video_note(chat_id=chat_id, video_note=msg['data']['video_note_id'], reply_markup=_kb)
+    elif msg['data']['photos'] and len(msg['data']['photos']) == 1:
+        if _text:
+            await bot.send_photo(chat_id=chat_id, photo=msg['data']['photos'][0], caption=_text, parse_mode=types.ParseMode.HTML, reply_markup=_kb)
+        else:
+            await bot.send_photo(chat_id=chat_id, photo=msg['data']['photos'][0], parse_mode=types.ParseMode.HTML, reply_markup=_kb)
     elif msg['data']['photos'] or msg['data']['video_id']:
         media = types.MediaGroup()
         if msg['data']['photos']:
@@ -74,7 +79,7 @@ async def start_command(update: types.ChatJoinRequest):
             await send_start_message(msg1, update.from_user.id, name)
         if msg2:
             await send_start_message(msg2, update.from_user.id, name)
-        await asyncio.sleep(1*5)
+        await asyncio.sleep(60*5)
         if msg3:
             await send_start_message(msg3, update.from_user.id, name)
 
