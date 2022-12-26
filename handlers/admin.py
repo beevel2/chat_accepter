@@ -98,6 +98,15 @@ async def get_message_command(
         pass
     if album:
         data['photos'] = [p.photo[-1].file_id for p in album if p.photo]
+        if len(data['photos']) == 0 and len(album) == 1:
+            if album[0].content_type == 'animation':
+                data['animation_id'] = album[0].animation.file_id
+            elif album[0].content_type == 'video':
+                data['video_id'] = album[0].video.file_id
+            elif album[0].content_type == 'video_note':
+                data['video_note_id'] = album[0].video_note.file_id
+            elif album[0].content_type == 'voice':
+                data['voice_id'] = album[0].voice.file_id
     elif message.video:
         data['video_id'] = message.video.file_id
     elif message.video_note:

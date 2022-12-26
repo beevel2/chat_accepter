@@ -38,7 +38,7 @@ class AlbumMiddleware(BaseMiddleware):
 
     async def on_process_message(self, message: types.Message, data: dict):
         if not message.media_group_id:
-            if message.photo or message.animation or message.video or message.video_note:
+            if message.photo or message.animation or message.video or message.video_note or message.voice:
                 data["album"] = [message]
             return
         try:
