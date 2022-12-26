@@ -219,9 +219,10 @@ async def mass_send_process_command(
                 {
                     "photo_id": message.photo[0].file_id if message.photo else None,
                     "video_id": message.video.file_id if message.video else None,
+                    "video_note_id": message.video_note.file_id if message.video_note else None,
                     "animation_id": message.animation.file_id if message.animation else None,
                     "voice_id": message.voice.file_id if message.voice else None,
-                    "text": message.html_text
+                    "text": message.html_text if message.text else None
                 }
             )
             text = "Введите кнопки"
@@ -256,6 +257,14 @@ async def mass_send_process_command(
                         await bot.send_video(
                             _user,
                             _state_data['video_id'],
+                            caption=_state_data['text'],
+                            parse_mode=types.ParseMode.HTML,
+                            reply_markup=_kb
+                        )
+                    elif _state_data['video_note_id']:
+                        await bot.send_video_note(
+                            _user,
+                            _state_data['video_note_id'],
                             caption=_state_data['text'],
                             parse_mode=types.ParseMode.HTML,
                             reply_markup=_kb

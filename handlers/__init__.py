@@ -19,7 +19,7 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(h_admin.get_buttons_command, state=[AppStates.STATE_MESSAGE_BUTTONS])
     
     dp.register_message_handler(h_admin.mass_send_command, Text(startswith='/mass_send_'))
-    dp.register_message_handler(h_admin.mass_send_process_command, content_types=['photo', 'text', 'video', 'animation', 'voice'], state=[AppStates.STATE_MASS_SEND_BUTTONS, AppStates.STATE_MASS_SEND_MESSAGE])
+    dp.register_message_handler(h_admin.mass_send_process_command, content_types=['any'], state=[AppStates.STATE_MASS_SEND_BUTTONS, AppStates.STATE_MASS_SEND_MESSAGE])
     dp.register_message_handler(h_admin.stats_command, commands=['stats'])
     
     dp.register_message_handler(h_admin.add_channel_step1_command, commands=['add_channel'])
