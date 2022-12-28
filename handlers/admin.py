@@ -213,6 +213,7 @@ async def mass_send_process_command(
     if not is_admin:
         return
     _state = await state.get_state()
+    success_send = 0
     try:
         if _state == AppStates.STATE_MASS_SEND_MESSAGE:
             await state.update_data(
@@ -240,11 +241,12 @@ async def mass_send_process_command(
                         "text": _text.strip(),
                         "url": _url.strip()
                     })
-            
+            await message.answer('Рассылка запущена!')
             user_ids = await db.get_id_all_users(_state_data['channel_id'])
             for _user in user_ids:
                 _kb = kb.kb_mass_send(buttons) if buttons else None
                 try:
+                    await asyncio.sleep(0.5)
                     if _state_data['photo_id']:
                         await bot.send_photo(
                             _user,
@@ -292,12 +294,13 @@ async def mass_send_process_command(
                             parse_mode=types.ParseMode.HTML,
                             reply_markup=_kb
                         )
-                    await asyncio.sleep(0.5)
+                    success_send += 1
                 except Exception as e:
                     print(f"ERROR MASS SEND: {e}")
                 
             text = "Рассылка закончена"
             await message.answer(text)
+            await message.answer(f"Успешно отправлено {success_send} из {len(user_ids)} сообщений")
 
 
             await state.reset_data()
@@ -306,6 +309,8 @@ async def mass_send_process_command(
         print(f'ERROR MASS SEND BIG: {e}')
         await state.reset_data()
         await state.reset_state()
+
+        await message.answer(f'ОШИБКА: {e}')
 
 
 async def stats_command(
