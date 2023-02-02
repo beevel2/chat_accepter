@@ -34,7 +34,7 @@ async def edit_start_message(text):
 
 async def get_id_all_users(channel_id: int):
     col = db_connection[COLLECTION_USER]
-    users = await col.find({'channel_id': channel_id}).to_list(9999)
+    users = await col.find({'channel_id': channel_id}).to_list(99999)
     return [x['tg_id'] for x in users]
 
 
