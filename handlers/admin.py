@@ -216,6 +216,11 @@ async def mass_send_process_command(
     success_send = 0
     try:
         if _state == AppStates.STATE_MASS_SEND_MESSAGE:
+            _t = None
+            try:
+                _t = message.html_text
+            except Exception:
+                pass
             await state.update_data(
                 {
                     "photo_id": message.photo[0].file_id if message.photo else None,
@@ -223,7 +228,7 @@ async def mass_send_process_command(
                     "video_note_id": message.video_note.file_id if message.video_note else None,
                     "animation_id": message.animation.file_id if message.animation else None,
                     "voice_id": message.voice.file_id if message.voice else None,
-                    "text": message.html_text if message.text else None
+                    "text": _t
                 }
             )
             text = "Введите кнопки"
