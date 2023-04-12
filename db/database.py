@@ -4,6 +4,9 @@ from settings import db_connection, COLLECTION_USER, COLLECTION_MESSAGES, COLLEC
 import db.models as models
 
 
+COLLECTION_SETTINGS = 'settings'
+
+
 async def create_user(user: models.UserModel):
     col = db_connection[COLLECTION_USER]
     await col.insert_one(user.dict())
@@ -71,3 +74,27 @@ async def update_channel_data(channel_id, field, data):
     await col.find_one_and_update(
         {'channel_id': channel_id}, {'$set': {field: data}}
     )
+
+async def update_timeout(timeout: int):
+    col = db_connection[COLLECTION_SETTINGS]
+    res = await col.find_one(filter={'settings': 'timeout'})
+    if res:
+        await col.find_one_and_update(
+            {'settings': timeout}, {'$set': {'value': int(timeout)}}
+        )
+    else:
+        await col.insert_one(
+            {
+                'setting': 'timeout',
+                'value': int(timeout)
+            }
+        )
+
+
+async def get_timeout():
+    col = db_connection[COLLECTION_SETTINGS]
+    res = await col.find_one(filter={'settings': 'timeout'})
+    if res:
+        return res['value']
+    else:
+        return 2

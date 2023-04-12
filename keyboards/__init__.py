@@ -1,4 +1,4 @@
-from aiogram.types import  InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import  InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 
 
 def kb_mass_send(buttons):
@@ -10,3 +10,21 @@ def kb_mass_send(buttons):
         )
 
     return kb
+
+
+kb_admin = ReplyKeyboardMarkup(
+    [
+        [
+            KeyboardButton('Добавить канал')
+        ],
+        [
+            KeyboardButton('Изменить сообщение')
+        ],
+        [
+            KeyboardButton('Рассылка')
+        ],
+        [
+            KeyboardButton('Изменить таймаут отправки сообщения')
+        ]
+    ], resize_keyboard=True
+)

@@ -11,33 +11,18 @@ from settings import bot
 import keyboards as kb
 
 
-# async def edit_start_message1_command(
-#         message: types.Message,
-#         state: FSMContext,
-#         is_admin: bool
-#     ):
-#     if not is_admin:
-#         return
-#     _channel_id = message.text.split('_')[-1]
-#     _channel_in_db = await db.get_channel_by_id(int(_channel_id))
-#     if not _channel_in_db:
-#         await message.answer(f'Канал ID: {_channel_id} - не найден!')
-#         return
-#     await state.set_state(AppStates.STATE_MESSAGE1_VIDEO)
-#     await state.set_data({'message': 1, 'channel_id': int(_channel_id)})
-#     await message.answer('Отправьте видео сообщение!')
+async def start_command(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+    if not is_admin:
+        return
+    
+    await state.reset_state()
+    await state.reset_data()
 
-
-# async def get_video_command(
-#         message: types.Message,
-#         state: FSMContext,
-#         is_admin: bool
-# ):
-#     if not is_admin:
-#         return
-#     await state.update_data({'file_id': message.video_note.file_id})
-#     await state.set_state(AppStates.STATE_MESSAGE_BUTTONS)
-#     await message.answer('Введите кнопки')
+    await message.answer('Выберите команду!', reply_markup=kb.kb_admin)
 
 
 async def edit_start_message_command(
@@ -57,23 +42,6 @@ async def edit_start_message_command(
         await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
         await state.set_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
         await message.answer('Отправьте сообщение!')
-
-
-# async def edit_start_message3_command(
-#         message: types.Message,
-#         state: FSMContext,
-#         is_admin: bool
-#     ):
-#     if not is_admin:
-#         return
-#     _channel_id = message.text.split('_')[-1]
-#     _channel_in_db = await db.get_channel_by_id(int(_channel_id))
-#     if not _channel_in_db:
-#         await message.answer(f'Канал ID: {_channel_id} - не найден!')
-#         return
-#     await state.set_state(AppStates.STATE_MESSAGE3_MESSAGE)
-#     await state.set_data({'message': 3, 'channel_id': int(_channel_id)})
-#     await message.answer('Отправьте сообщение!')
 
 
 async def get_message_command(
@@ -146,29 +114,6 @@ async def get_buttons_command(
     }
 
     await db.update_channel_data(_state['channel_id'], f"message_{_state['message']}", data)
-
-    # if num_msg == 1:
-    #     data = {
-    #         'file_id': _state['file_id'],
-    #         'buttons': buttons
-    #     }
-    #     await db.edit_message('start_message_1', data)
-    #     await db.update_channel_data(_state['channel_id'], 'message_1', data)
-    # elif num_msg == 2:
-    #     data = {
-    #         'data': _state['data'],
-    #         'buttons': buttons
-    #     }
-    #     await db.edit_message('start_message_2', data)
-    #     await db.update_channel_data(_state['channel_id'], 'message_2', data)
-
-    # else:
-    #     data = {
-    #         'data': _state['data'],
-    #         'buttons': buttons
-    #     }
-    #     await db.edit_message('start_message_3', data)
-    #     await db.update_channel_data(_state['channel_id'], 'message_3', data)
 
     await state.reset_data()
     await state.reset_state()
@@ -393,4 +338,86 @@ async def add_channel_step4_command(
     )
     await message.answer('Канал успешно добавлен ✅')
     await state.reset_data()
+    await state.reset_state()
+
+
+async def mass_send_btn_command(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+    if not is_admin:
+        return
+    
+    await message.answer('Введите ID канала!')
+    await state.set_state(AppStates.STATE_MASS_SEND_BTN)
+
+
+async def mass_send_btn_step2_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+    ):
+    if not is_admin:
+        return
+    _channel_id = message.text
+    _channel_in_db = await db.get_channel_by_id(int(_channel_id))
+    if not _channel_in_db:
+        await message.answer(f'Канал ID: {_channel_id} - не найден!')
+        return
+    await state.set_state(AppStates.STATE_MASS_SEND_MESSAGE)
+    await state.set_data({'channel_id': int(_channel_id)})
+    await message.answer('Введите сообщение для рассылки')
+
+
+async def edit_start_message_btn_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+    ):
+    if not is_admin:
+        return
+    await message.answer('Введите ID канала и номер сообщение (через пробел)')
+    await state.set_state(AppStates.STATE_EDIT_MESSAGE_BTN)
+
+
+async def edit_start_message_btn_step2_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+    ):
+    if not is_admin:
+        return
+    _channel_id = message.text.split()[0]
+    _mes_num = message.text.split()[1]
+    _channel_in_db = await db.get_channel_by_id(int(_channel_id))
+    if not _channel_in_db:
+        await message.answer(f'Канал ID: {_channel_id} - не найден!')
+        return
+    if _mes_num.isdigit and int(_mes_num) in [1, 2, 3]:
+        await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
+        await state.set_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
+        await message.answer('Отправьте сообщение!')
+
+
+async def edit_timeout_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+    ):
+    if not is_admin:
+        return
+    await message.answer('Введите количество секунд задержки перед отправкой третьего сообщения!')
+    await state.set_state(AppStates.STATE_CHANGE_TIMEOUT_BTN)
+
+
+async def edit_timeout_step2_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+    ):
+    if not is_admin:
+        return
+    await db.update_timeout(message.text)
+    await message.answer('Таймаут обновлен!')
     await state.reset_state()

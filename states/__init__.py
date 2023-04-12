@@ -15,3 +15,8 @@ class AppStates(Helper):
     STATE_ADD_CHANNEL_ID = Item()
     STATE_ADD_CHANNEL_TG_ID = Item()
     STATE_ADD_CHANNEL_LINK_NAME = Item()
+
+    STATE_MASS_SEND_BTN = Item()
+    STATE_EDIT_MESSAGE_BTN = Item()
+    STATE_ADD_CHANNEL_BTN = Item()
+    STATE_CHANGE_TIMEOUT_BTN = Item()
