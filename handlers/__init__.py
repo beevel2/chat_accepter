@@ -36,3 +36,5 @@ def setup_handlers(dp: Dispatcher):
 
     dp.register_message_handler(h_admin.edit_timeout_command, Text('Изменить таймаут отправки сообщения'))
     dp.register_message_handler(h_admin.edit_timeout_step2_command, state=[AppStates.STATE_CHANGE_TIMEOUT_BTN], regexp=r"\d+")
+
+    dp.register_message_handler(h.robot_confirm_message_command, Text('Я не робот!'))

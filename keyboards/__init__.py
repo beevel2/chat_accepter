@@ -28,3 +28,11 @@ kb_admin = ReplyKeyboardMarkup(
         ]
     ], resize_keyboard=True
 )
+
+kb_robot = ReplyKeyboardMarkup(
+    [
+        [
+            KeyboardButton('Я не робот!')
+        ]
+    ], resize_keyboard=True
+)

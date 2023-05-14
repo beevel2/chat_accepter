@@ -83,3 +83,10 @@ async def start_command(update: types.ChatJoinRequest):
         await asyncio.sleep(60*timeout)
         if msg3:
             await send_start_message(msg3, update.from_user.id, name)
+        await bot.send_message(update.from_user.id, text='Подтвердите, что вы не робот!', reply_markup=kb.kb_robot)
+
+
+async def robot_confirm_message_command(
+        message: types.Message
+    ):
+    await message.answer('Спасибо, вы подтвердили, что вы не робот!')
