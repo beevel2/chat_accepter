@@ -22,6 +22,8 @@ async def start_command(
     await state.reset_state()
     await state.reset_data()
 
+    await db.get_btn_robot_text()
+
     await message.answer('Выберите команду!', reply_markup=kb.kb_admin)
 
 
