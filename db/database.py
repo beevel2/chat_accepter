@@ -98,3 +98,18 @@ async def get_timeout():
         return res['value']
     else:
         return 2
+
+
+async def get_btn_robot_text():
+    col = db_connection[COLLECTION_SETTINGS]
+    res = await col.find_one(filter={'settings': 'btn_robot_text'})
+    if res:
+        return res['value']
+    else:
+        await col.insert_one(
+            {
+                'setting': 'btn_robot_text',
+                'value': 'Я не робот!'
+            }
+        )
+        return 'Я не робот!'
