@@ -13,11 +13,8 @@ from utils import replace_in_message
 import keyboards as kb
 
 
-async def send_start_message(msg, chat_id, name, keyb=None):
-    if keyb is None:
-        _kb = kb.kb_mass_send(msg['buttons'])
-    else:
-        _kb = keyb
+async def send_start_message(msg, chat_id, name):
+    _kb = kb.kb_mass_send(msg['buttons'])
     _text = replace_in_message(msg['data']['text'], 'USER', name) 
     if msg['data']['video_note_id']:
         await bot.send_video_note(chat_id=chat_id, video_note=msg['data']['video_note_id'], reply_markup=_kb)
@@ -85,15 +82,7 @@ async def start_command(update: types.ChatJoinRequest):
         timeout = await db.get_timeout()
         await asyncio.sleep(60*timeout)
         if msg3:
-            _btn_robot_text = await db.get_btn_robot_text()
-            _kb_robot = kb.ReplyKeyboardMarkup(
-                [
-                    [
-                        kb.KeyboardButton(_btn_robot_text)
-                    ]
-                ], resize_keyboard=True
-            )
-            await send_start_message(msg3, update.from_user.id, name, keyb=_kb_robot)
+            await send_start_message(msg3, update.from_user.id, name)
 
 
 async def robot_confirm_message_command(

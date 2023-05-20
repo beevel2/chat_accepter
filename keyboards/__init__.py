@@ -2,14 +2,30 @@ from aiogram.types import  InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyb
 
 
 def kb_mass_send(buttons):
-    kb = InlineKeyboardMarkup(row_width=1)
-    
-    for btn in buttons:
-        kb.add(
-            InlineKeyboardButton(btn['text'], url=btn['url'])
-        )
+    isInline = True
 
-    return kb
+    for btn in buttons:
+        if btn['url'].lower() == 'кнопка':
+            isInline = False
+            break
+
+    if isInline:
+
+        kb = InlineKeyboardMarkup(row_width=1)
+        
+        for btn in buttons:
+            kb.add(
+                InlineKeyboardButton(btn['text'], url=btn['url'])
+            )
+
+        return kb
+
+    else:
+        kb = ReplyKeyboardMarkup(
+            [
+                [ KeyboardButton(buttons[0]['url']) ]
+            ], resize_keyboard=True
+        )
 
 
 kb_admin = ReplyKeyboardMarkup(
