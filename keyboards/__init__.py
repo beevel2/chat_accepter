@@ -27,6 +27,8 @@ def kb_mass_send(buttons):
             ], resize_keyboard=True
         )
 
+        return kb
+
 
 kb_admin = ReplyKeyboardMarkup(
     [
