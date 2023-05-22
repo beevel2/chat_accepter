@@ -23,7 +23,7 @@ def kb_mass_send(buttons):
     else:
         kb = ReplyKeyboardMarkup(
             [
-                [ KeyboardButton(buttons[0]['url']) ]
+                [ KeyboardButton(buttons[0]['text']) ]
             ], resize_keyboard=True
         )
 
