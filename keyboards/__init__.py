@@ -24,7 +24,7 @@ def kb_mass_send(buttons):
         kb = ReplyKeyboardMarkup(
             [
                 [ KeyboardButton(buttons[0]['text']) ]
-            ], resize_keyboard=True
+            ]
         )
 
         return kb
