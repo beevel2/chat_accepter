@@ -12,6 +12,7 @@ class UserModel(BaseModel):
     tg_id: int
     date_registration: datetime = datetime.now()
     channel_id: int
+    notIsRobot: bool = False
 
 
 class AdminModel(BaseModel):
@@ -22,7 +23,12 @@ class ChannelModel(BaseModel):
     channel_id: int
     tg_id: int
     link_name: str
-    message_1: Optional[str] = None
-    message_2: Optional[str] = None
-    message_3: Optional[str] = None
+    msg_1: Optional[str] = None
+    msg_2: Optional[str] = None
+    msg_3: Optional[str] = None
+    msg_4: Optional[str] = None
+    msg_5: Optional[str] = None
+    msg_6: Optional[str] = None
+    msg_7: Optional[str] = None
+    msg_mass_send: Optional[str] = None
 

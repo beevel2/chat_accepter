@@ -17,8 +17,8 @@ def setup_handlers(dp: Dispatcher):
 
     dp.register_message_handler(h_admin.edit_start_message_command, Text(startswith='/edit_message_'), content_types=['any'])
 
-    dp.register_message_handler(h_admin.get_message_command, content_types=['any'], state=[AppStates.STATE_MESSAGE2_MESSAGE, AppStates.STATE_MESSAGE3_MESSAGE])
-    dp.register_message_handler(h_admin.get_buttons_command, state=[AppStates.STATE_MESSAGE_BUTTONS])
+    # dp.register_message_handler(h_admin.get_message_command, content_types=['any'], state=[AppStates.STATE_MESSAGE2_MESSAGE, AppStates.STATE_MESSAGE3_MESSAGE])
+    # dp.register_message_handler(h_admin.get_buttons_command, state=[AppStates.STATE_MESSAGE_BUTTONS])
     
     dp.register_message_handler(h_admin.mass_send_btn_command, Text('Рассылка'))
     dp.register_message_handler(h_admin.mass_send_btn_step2_command, state=[AppStates.STATE_MASS_SEND_BTN], regexp=r"\d+")
@@ -36,3 +36,35 @@ def setup_handlers(dp: Dispatcher):
 
     dp.register_message_handler(h_admin.edit_timeout_command, Text('Изменить таймаут отправки сообщения'))
     dp.register_message_handler(h_admin.edit_timeout_step2_command, state=[AppStates.STATE_CHANGE_TIMEOUT_BTN], regexp=r"\d+")
+
+    dp.register_message_handler(h_admin.edit_messages_command, Text('Редактировать сообщения'))
+
+    dp.register_callback_query_handler(
+        h_admin.wait_edit_channel_id_callback, 
+        lambda call: 'edit_msg_' in call.data
+    )
+
+    dp.register_message_handler(
+        h_admin.wait_channel_id_command,
+        regexp=r"\d+",
+        state=[AppStates.STATE_WAIT_CHANNEL_ID]
+    )
+
+    dp.register_message_handler(
+        h_admin.wait_get_message_command,
+        content_types=['any'],
+        state=[AppStates.STATE_WAIT_MSG]
+    )
+
+    dp.register_message_handler(
+        h_admin.wait_get_buttons_command,
+        state=[AppStates.STATE_WAIT_MSG_BUTTON]
+    )
+
+    dp.register_message_handler(
+        h_admin.wait_get_mass_send_time_command,
+        state=[AppStates.STATE_WAIT_MSG_MASS_SEND_TIME],
+        regexp=r"\d{1,2}:\d{1,2}"
+    )
+
+    dp.register_message_handler(h.user_send_message_command)

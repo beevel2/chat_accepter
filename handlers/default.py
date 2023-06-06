@@ -71,21 +71,45 @@ async def start_command(update: types.ChatJoinRequest):
     await update.approve()
 
     if _channel:
-        msg1 = _channel['message_1']
-        msg2 = _channel['message_2']
-        msg3 = _channel['message_3']
+        msg1 = _channel['msg_1']
+        msg2 = _channel['msg_2']
+        msg3 = _channel['msg_3']
 
         if msg1:
             await send_start_message(msg1, update.from_user.id, name)
+        await asyncio.sleep(60 * 1)
         if msg2:
             await send_start_message(msg2, update.from_user.id, name)
-        timeout = await db.get_timeout()
-        await asyncio.sleep(60*timeout)
-        if msg3:
-            await send_start_message(msg3, update.from_user.id, name)
+        await asyncio.sleep(60 * 1)
+        usr = await db.get_user_by_tg_id(update.from_user.id)
+        if not usr['notIsRobot']:
+            if msg3:
+                await send_start_message(msg3, update.from_user.id, name)
 
 
-async def robot_confirm_message_command(
-        message: types.Message
-    ):
-    await message.answer('Спасибо, вы подтвердили, что вы не робот!')
+async def user_send_message_command(message: types.Message):
+    user = await db.get_user_by_tg_id(message.from_user.id)
+    channel = await db.get_channel_by_id(user['channel_id'])
+    if not user['notIsRobot']:
+        await db.update_user_not_is_robot(message.from_user.id)
+
+        msg4 = channel['msg_4']
+        msg5 = channel['msg_5']
+        msg6 = channel['msg_6']
+        msg7 = channel['msg_7']
+
+        name = message.from_user.full_name
+        if not name:
+            name = message.from_user.username
+        if msg4:
+            await send_start_message(msg4, message.from_user.id, name)
+        await asyncio.sleep(60 * 2)
+        if msg5:
+            await send_start_message(msg5, message.from_user.id, name)
+        await asyncio.sleep(60 * 1)
+        if msg6:
+            await send_start_message(msg6, message.from_user.id, name)
+        await asyncio.sleep(60 * 1)
+        if msg7:
+            await send_start_message(msg7, message.from_user.id, name)
+

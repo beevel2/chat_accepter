@@ -9,6 +9,7 @@ import db.models as models
 from states import AppStates
 from settings import bot
 import keyboards as kb
+import scheduler
 
 
 async def start_command(
@@ -423,3 +424,173 @@ async def edit_timeout_step2_command(
     await db.update_timeout(message.text)
     await message.answer('Таймаут обновлен!')
     await state.reset_state()
+
+
+async def edit_messages_command(
+    message: types.Message,
+    is_admin: bool
+):
+    if not is_admin:
+        return
+    _kb = kb.kb_edit_message()
+    await message.answer('Выберите сообщение:', reply_markup=_kb)
+
+
+async def wait_edit_channel_id_callback(
+    callback: types.CallbackQuery,
+    state: FSMContext
+):
+    await callback.message.answer('Введите ID канала')
+    await state.set_data({'callback': callback.data})
+    await state.set_state(AppStates.STATE_WAIT_CHANNEL_ID)
+
+
+async def wait_channel_id_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+):
+    if not is_admin:
+        return
+    channel = await db.get_channel_by_id(int(message.text))
+    if not channel:
+        await message.answer(f'Канал ID: {message.text} - не найден!')
+        return
+    await state.set_state(AppStates.STATE_WAIT_MSG)
+    await state.update_data({'channel_id': int(message.text)})
+    await message.answer('Отправьте сообщение!')
+
+
+async def wait_get_message_command(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool,
+        album: Optional[List[types.Message]] = None
+):
+    if not is_admin:
+        return
+    data = {
+        'text': '',
+        'photos': [],
+        'video_id': None,
+        'video_note_id': None,
+        'animation_id': None,
+        'voice_id': None
+    }
+    try:
+        data['text'] = message.html_text
+    except Exception:
+        pass
+    if album:
+        data['photos'] = [p.photo[-1].file_id for p in album if p.photo]
+        if len(data['photos']) == 0 and len(album) == 1:
+            if album[0].content_type == 'animation':
+                data['animation_id'] = album[0].animation.file_id
+            elif album[0].content_type == 'video':
+                data['video_id'] = album[0].video.file_id
+            elif album[0].content_type == 'video_note':
+                data['video_note_id'] = album[0].video_note.file_id
+            elif album[0].content_type == 'voice':
+                data['voice_id'] = album[0].voice.file_id
+    elif message.video:
+        data['video_id'] = message.video.file_id
+    elif message.video_note:
+        data['video_note_id'] = message.video_note.file_id
+    elif message.animation:
+        data['animation'] = message.animation.file_id
+    elif message.voice:
+        data['voice_id'] = message.voice.file_id
+    _state = await state.get_data()
+    await state.update_data({'data': data})
+    if _state['callback'] == 'edit_msg_mass':
+        await state.set_state(AppStates.STATE_WAIT_MSG_MASS_SEND_TIME)
+        await message.answer('Введите время по МСК. (В формате hh:mm)')
+    else:
+        await state.set_state(AppStates.STATE_WAIT_MSG_BUTTON)
+        await message.answer('Введите кнопки')
+
+
+async def wait_get_mass_send_time_command(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+    if not is_admin:
+        return
+    await state.update_data({'time': message.text})
+    await state.set_state(AppStates.STATE_WAIT_MSG_BUTTON)
+    await message.answer('Введите кнопки')
+
+
+async def wait_get_buttons_command(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+    if not is_admin:
+        return
+    buttons = []
+    if message.text != '0':
+        for s in message.text.split('\n'):
+            if len(s.split('-')) < 2: continue
+            _text = s.split('-')[0]
+            _url = '-'.join(s.split('-')[1:])
+            buttons.append({
+                "text": _text.strip(),
+                "url": _url.strip()
+            })
+    _state = await state.get_data()
+
+    msg_type_dict = {
+        'edit_msg_priv':'msg_1',
+        'edit_msg_vz1':'msg_2',
+        'edit_msg_vz2':'msg_3',
+        'edit_msg_submit':'msg_4',
+        'edit_msg_ozn':'msg_5',
+        'edit_msg_info1':'msg_6',
+        'edit_msg_info2':'msg_7',
+        'edit_msg_mass':'msg_mass_send',
+    }
+
+    msg_type = msg_type_dict[_state['callback']]
+
+    _h, _m = 0, 0
+
+    if msg_type == 'msg_mass_send':
+        _h = int(_state['time'].split(':')[0])
+        _m = int(_state['time'].split(':')[1])
+
+        _users_for_mass_send = await db.get_id_all_users(_state['channel_id'])
+
+        schedule_data = {
+            'message': {
+                    "data": _state['data'],
+                    "buttons": buttons
+                },
+            'channel_id': _state['channel_id'],
+            'users': _users_for_mass_send,
+            'hour': _h,
+            'minutes': _m
+        }
+
+        scheduler.scheduler.add_job(
+            scheduler.send_mass_messages,
+            'cron',
+            hour=_h,
+            minute=_m,
+            args=(schedule_data, )
+        )
+
+    data = {
+        'data': _state['data'],
+        'buttons': buttons,
+        'hour': _h,
+        'minutes': _m
+    }
+
+    await db.update_channel_data(_state['channel_id'], msg_type, data)
+
+    await state.reset_data()
+    await state.reset_state()
+
+    await message.answer('Сообщение принято! ✅')

@@ -20,3 +20,8 @@ class AppStates(Helper):
     STATE_EDIT_MESSAGE_BTN = Item()
     STATE_ADD_CHANNEL_BTN = Item()
     STATE_CHANGE_TIMEOUT_BTN = Item()
+
+    STATE_WAIT_CHANNEL_ID = Item()
+    STATE_WAIT_MSG = Item()
+    STATE_WAIT_MSG_BUTTON = Item()
+    STATE_WAIT_MSG_MASS_SEND_TIME = Item()
