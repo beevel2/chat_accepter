@@ -15,7 +15,7 @@ import keyboards as kb
 
 async def send_start_message(msg, chat_id, name, delete_kb=False):
     if delete_kb:
-        _kb = False
+        _kb = None
     else:
         _kb = kb.kb_mass_send(msg['buttons'])
     _text = replace_in_message(msg['data']['text'], 'USER', name) 
