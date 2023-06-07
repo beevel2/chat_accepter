@@ -15,7 +15,7 @@ import keyboards as kb
 
 async def send_start_message(msg, chat_id, name, delete_kb=False):
     if delete_kb:
-        _kb = None
+        _kb = kb.ReplyKeyboardRemove()
     else:
         _kb = kb.kb_mass_send(msg['buttons'])
     _text = replace_in_message(msg['data']['text'], 'USER', name) 
@@ -108,7 +108,7 @@ async def user_send_message_command(message: types.Message):
             await send_start_message(msg4, message.from_user.id, name, delete_kb=True)
         await asyncio.sleep(60 * 2)
         if msg5:
-            await send_start_message(msg5, message.from_user.id, name, delete_kb=True)
+            await send_start_message(msg5, message.from_user.id, name)
         await asyncio.sleep(60 * 1)
         if msg6:
             await send_start_message(msg6, message.from_user.id, name)
