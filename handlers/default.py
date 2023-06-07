@@ -13,8 +13,11 @@ from utils import replace_in_message
 import keyboards as kb
 
 
-async def send_start_message(msg, chat_id, name):
-    _kb = kb.kb_mass_send(msg['buttons'])
+async def send_start_message(msg, chat_id, name, delete_kb=False):
+    if delete_kb:
+        _kb = False
+    else:
+        _kb = kb.kb_mass_send(msg['buttons'])
     _text = replace_in_message(msg['data']['text'], 'USER', name) 
     if msg['data']['video_note_id']:
         await bot.send_video_note(chat_id=chat_id, video_note=msg['data']['video_note_id'], reply_markup=_kb)
@@ -102,10 +105,10 @@ async def user_send_message_command(message: types.Message):
         if not name:
             name = message.from_user.username
         if msg4:
-            await send_start_message(msg4, message.from_user.id, name)
+            await send_start_message(msg4, message.from_user.id, name, delete_kb=True)
         await asyncio.sleep(60 * 2)
         if msg5:
-            await send_start_message(msg5, message.from_user.id, name)
+            await send_start_message(msg5, message.from_user.id, name, delete_kb=True)
         await asyncio.sleep(60 * 1)
         if msg6:
             await send_start_message(msg6, message.from_user.id, name)
