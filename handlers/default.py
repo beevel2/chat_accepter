@@ -93,7 +93,7 @@ async def start_command(update: types.ChatJoinRequest):
 async def user_send_message_command(message: types.Message):
     user = await db.get_user_by_tg_id(message.from_user.id)
     channel = await db.get_channel_by_id(user['channel_id'])
-    if not user['notIsRobot']:
+    if not user.get('notIsRobot'):
         await db.update_user_not_is_robot(message.from_user.id)
 
         msg4 = channel['msg_4']
