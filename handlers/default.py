@@ -74,9 +74,9 @@ async def start_command(update: types.ChatJoinRequest):
     await update.approve()
 
     if _channel:
-        msg1 = _channel['msg_1']
-        msg2 = _channel['msg_2']
-        msg3 = _channel['msg_3']
+        msg1 = _channel.get('msg_1')
+        msg2 = _channel.get('msg_2')
+        msg3 = _channel.get('msg_3')
 
         if msg1:
             await send_start_message(msg1, update.from_user.id, name)
@@ -96,10 +96,10 @@ async def user_send_message_command(message: types.Message):
     if not user.get('notIsRobot'):
         await db.update_user_not_is_robot(message.from_user.id)
 
-        msg4 = channel['msg_4']
-        msg5 = channel['msg_5']
-        msg6 = channel['msg_6']
-        msg7 = channel['msg_7']
+        msg4 = channel.get('msg_4')
+        msg5 = channel.get('msg_5')
+        msg6 = channel.get('msg_6')
+        msg7 = channel.get('msg_7')
 
         name = message.from_user.full_name
         if not name:
