@@ -85,7 +85,7 @@ async def start_command(update: types.ChatJoinRequest):
             await send_start_message(msg2, update.from_user.id, name)
         await asyncio.sleep(60 * 1)
         usr = await db.get_user_by_tg_id(update.from_user.id)
-        if not usr['notIsRobot']:
+        if not usr.get('notIsRobot'):
             if msg3:
                 await send_start_message(msg3, update.from_user.id, name)
 
