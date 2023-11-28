@@ -18,6 +18,11 @@ async def update_user_not_is_robot(tg_id: int):
     )
 
 
+async def create_admin(admin_id):
+    col = db_connection[COLLECTION_ADMIN]
+    await col.insert_one({"tg_id": admin_id})
+
+
 async def get_user_by_tg_id(tg_id: int):
     col = db_connection[COLLECTION_USER]
     return await col.find_one(filter={'tg_id': tg_id})
@@ -87,9 +92,14 @@ async def get_channel_by_id(channel_id: int):
     return await col.find_one(filter={'channel_id': channel_id})
 
 
+async def get_channel_by_tg_id(tg_id: int):
+    col = db_connection[COLLECTION_CHANNELS]
+    return await col.find_one(filter={'tg_id': tg_id})
+
+
 async def get_channel_by_link_name(link_name: str):
     col = db_connection[COLLECTION_CHANNELS]
-    return await col.find_one(filter={'link_name': link_name})
+    return await col.find_one(filter={'chat_id': link_name})
 
 
 async def update_channel_data(channel_id, field, data):

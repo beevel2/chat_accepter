@@ -319,24 +319,13 @@ async def add_channel_step3_command(
         return
         
     await state.update_data({'tg_id': message.text})
-    await message.answer('Введите название ссылки')
-    await state.set_state(AppStates.STATE_ADD_CHANNEL_LINK_NAME)
 
-
-async def add_channel_step4_command(
-        message: types.Message,
-        state: FSMContext,
-        is_admin: bool
-    ):
-    if not is_admin:
-        return
-    
     _data = await state.get_data()
     await db.create_channel(
         models.ChannelModel(
             channel_id=_data['channel_id'],
             tg_id=_data['tg_id'],
-            link_name=message.text
+            link_name='some_link'
         )
     )
     await message.answer('Канал успешно добавлен ✅')

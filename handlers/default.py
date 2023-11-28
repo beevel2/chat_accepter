@@ -53,7 +53,7 @@ async def send_start_message(msg, chat_id, name, delete_kb=False):
 
 async def start_command(update: types.ChatJoinRequest):
     _channel_id = -1
-    _channel = await db.get_channel_by_link_name(update.invite_link.name)
+    _channel = await db.get_channel_by_tg_id(update.chat.id)
     if _channel:
         _channel_id = _channel['channel_id']
     user_in_db = await db.get_user_by_tg_id(update.from_user.id)
@@ -72,7 +72,6 @@ async def start_command(update: types.ChatJoinRequest):
         name = update.from_user.username
 
     await update.approve()
-
     if _channel:
         msg1 = _channel.get('msg_1')
         msg2 = _channel.get('msg_2')
