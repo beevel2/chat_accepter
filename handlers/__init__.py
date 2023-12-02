@@ -12,10 +12,21 @@ def setup_handlers(dp: Dispatcher):
 
     dp.register_message_handler(h_admin.start_command, commands=['start'], state='*')
 
+    dp.register_message_handler(h_admin.cancel, Text('Отмена'))
+
     dp.register_message_handler(h_admin.edit_start_message_btn_command, Text('Изменить сообщение'))
     dp.register_message_handler(h_admin.edit_start_message_btn_step2_command, state=[AppStates.STATE_EDIT_MESSAGE_BTN], regexp=r"\d+\s\d")
 
     dp.register_message_handler(h_admin.edit_start_message_command, Text(startswith='/edit_message_'), content_types=['any'])
+
+
+    dp.register_message_handler(h_admin.approvement_settings, Text('Приём заявок'))
+    dp.register_message_handler(h_admin.approvement_settings_get_id, content_types='text', state=[AppStates.STATE_APPROVEMENT_SETTINGS])
+    dp.register_callback_query_handler(h_admin.approvement_settings_query, lambda c: c.data.startswith('approve'), state=[AppStates.STATE_APPROVEMENT_SETTINGS])
+
+    dp.register_message_handler(h_admin.approve_requersts_btn, Text('Одобрить заявки'))
+    dp.register_message_handler(h_admin.approve_requests_get_id, content_types='text', state=[AppStates.STATE_APPROVE_REQUERSTS])
+
 
     # dp.register_message_handler(h_admin.get_message_command, content_types=['any'], state=[AppStates.STATE_MESSAGE2_MESSAGE, AppStates.STATE_MESSAGE3_MESSAGE])
     # dp.register_message_handler(h_admin.get_buttons_command, state=[AppStates.STATE_MESSAGE_BUTTONS])
@@ -32,6 +43,7 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(h_admin.add_channel_step1_command, commands=['add_channel'])
     dp.register_message_handler(h_admin.add_channel_step2_command, state=[AppStates.STATE_ADD_CHANNEL_ID])
     dp.register_message_handler(h_admin.add_channel_step3_command, state=[AppStates.STATE_ADD_CHANNEL_TG_ID])
+    dp.register_callback_query_handler(h_admin.add_channel_step4_command, lambda c: c.data.startswith('approve_'), state=[AppStates.STATE_ADD_CHANNEL_APPROVE])
 
     dp.register_message_handler(h_admin.edit_timeout_command, Text('Изменить таймаут отправки сообщения'))
     dp.register_message_handler(h_admin.edit_timeout_step2_command, state=[AppStates.STATE_CHANGE_TIMEOUT_BTN], regexp=r"\d+")

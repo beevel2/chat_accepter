@@ -23,6 +23,7 @@ class ChannelModel(BaseModel):
     channel_id: int
     tg_id: int
     link_name: str
+    approve: bool
     msg_1: Optional[str] = None
     msg_2: Optional[str] = None
     msg_3: Optional[str] = None

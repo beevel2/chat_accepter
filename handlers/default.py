@@ -71,7 +71,10 @@ async def start_command(update: types.ChatJoinRequest):
     if not name:
         name = update.from_user.username
 
-    await update.approve()
+    if _channel:
+        if _channel['approve'] is True:
+            await update.approve()
+            
     if _channel:
         msg1 = _channel.get('msg_1')
         msg2 = _channel.get('msg_2')

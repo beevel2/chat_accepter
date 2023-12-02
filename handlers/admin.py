@@ -320,15 +320,36 @@ async def add_channel_step3_command(
         
     await state.update_data({'tg_id': message.text})
 
+    await state.set_state(AppStates.STATE_ADD_CHANNEL_APPROVE)
+
+    await bot.send_message(chat_id=message.from_user.id,
+    text='Одобрять заявки на добавление?',
+    reply_markup=kb.kb_approve)
+
+
+async def add_channel_step4_command(
+        query: types.CallbackQuery,
+        state: FSMContext,
+        # is_admin: bool
+    ):
+    # if not is_admin:
+    #     return
+    await query.answer()
+
+    if query.data.endswith('yes'):
+        approve = True
+    else:
+        approve = False
+
     _data = await state.get_data()
     await db.create_channel(
         models.ChannelModel(
             channel_id=_data['channel_id'],
             tg_id=_data['tg_id'],
-            link_name='some_link'
-        )
+            link_name='some_link',
+            approve=approve)
     )
-    await message.answer('Канал успешно добавлен ✅')
+    await query.message.answer('Канал успешно добавлен ✅')
     await state.reset_data()
     await state.reset_state()
 
@@ -340,7 +361,6 @@ async def mass_send_btn_command(
 ):
     if not is_admin:
         return
-    
     await message.answer('Введите ID канала!')
     await state.set_state(AppStates.STATE_MASS_SEND_BTN)
 
@@ -583,3 +603,134 @@ async def wait_get_buttons_command(
     await state.reset_state()
 
     await message.answer('Сообщение принято! ✅')
+
+
+async def approve_requersts_btn(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+    
+    if not is_admin:
+        return
+
+    await message.reply(text='Введите ID канала в котором хотите одобрить заявки:',
+    reply_markup=kb.kb_cancel)
+    await state.set_state(AppStates.STATE_APPROVE_REQUERSTS)
+
+
+async def approve_requests_get_id(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+
+    if not is_admin:
+        return
+    
+    try:
+        channel = await db.get_channel_by_id(int(message.text))
+        users = await db.get_id_all_users(int(message.text))
+    except ValueError:
+        await message.reply('ID канала должно быть числом, попробуйте снова',
+        reply_markup=kb.kb_cancel)
+        return
+
+    if not channel:
+        await message.reply('Канала с таким ID не существует, попробуйте снова',
+        reply_markup=kb.kb_cancel)
+        return
+
+    added = 0
+    for user_id in users:
+        try:
+            success = await bot.approve_chat_join_request(chat_id=channel['tg_id'], user_id=user_id)
+            if success is True:
+                added += 1
+        except Exception as e:
+            print(f'error while approving request for channel {channel.get("tg_id")} and user {user_id}; {repr(e)}')
+        
+    await message.reply(text=f'Одобрены {added} заявок! ✅',
+                        reply_markup=kb.kb_admin)
+    await state.finish()
+
+
+async def cancel(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+    if not is_admin:
+        return
+    await message.reply(text='Возврат в главное меню',
+                        reply_markup=kb.kb_admin)
+    await state.finish()
+
+async def approvement_settings(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+    if not is_admin:
+        return
+    
+    await message.reply(text='Введите ID канала:',
+    reply_markup=kb.kb_cancel)
+    await state.set_state(AppStates.STATE_APPROVEMENT_SETTINGS)
+
+
+async def approvement_settings_get_id(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+    if not is_admin:
+        return
+    
+    try:
+        channel = await db.get_channel_by_id(int(message.text))
+    except ValueError:
+        await message.reply('ID канала должно быть числом, попробуйте снова',
+        reply_markup=kb.kb_cancel)
+        return
+
+    if not channel:
+        await message.reply('Канала с таким ID не существует, попробуйте снова',
+        reply_markup=kb.kb_cancel)
+        return
+    
+    await state.update_data(channel_id=int(message.text))
+    
+    await message.reply(text=f'Настройка приёма заявок для канала {message.text}. Принимать заявки?',
+                        reply_markup=kb.kb_approve)
+
+
+async def approvement_settings_query(
+    query: types.CallbackQuery,
+    state: FSMContext,
+    # is_admin: bool
+):
+    # if not is_admin:
+    #     return
+    
+    data = await state.get_data()
+    channel_id = data.get('channel_id')
+    if not channel_id:
+        await query.answer('Используйте актуальные кнопки')
+        return
+    await query.answer()
+
+    if query.data.endswith('yes'):
+        approve=True
+    else:
+        approve=False
+
+    await db.update_channel_data(channel_id, 'approve', approve)
+
+    if approve is True:
+        text = 'БУДЕТ'
+    else:
+        text = 'НЕ БУДЕТ'
+    await query.message.reply(text=f'Теперь канал {channel_id} {text} принимать заявки',
+                              reply_markup=kb.kb_admin)
+    await state.reset_state()

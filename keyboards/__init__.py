@@ -47,6 +47,13 @@ kb_admin = ReplyKeyboardMarkup(
         ],
         [
             KeyboardButton('Редактировать сообщения')
+        ],
+        [
+            KeyboardButton('Приём заявок')
+        ],
+        [
+            KeyboardButton('Одобрить заявки')
+
         ]
     ], resize_keyboard=True
 )
@@ -70,3 +77,12 @@ def kb_edit_message():
     _kb.add(InlineKeyboardButton('Информация 2', callback_data='edit_msg_info2'))
     _kb.add(InlineKeyboardButton('Рассылка', callback_data='edit_msg_mass'))
     return _kb
+
+
+kb_approve = InlineKeyboardMarkup()
+kb_approve.row(InlineKeyboardButton(text='Да', callback_data='approve_yes'),
+               InlineKeyboardButton(text='Нет', callback_data='approve_no'))
+
+
+kb_cancel = ReplyKeyboardMarkup(resize_keyboard=True)
+kb_cancel.add(KeyboardButton('Отмена'))
