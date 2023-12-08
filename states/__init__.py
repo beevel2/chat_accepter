@@ -14,6 +14,7 @@ class AppStates(Helper):
     
     STATE_ADD_CHANNEL_ID = Item()
     STATE_ADD_CHANNEL_TG_ID = Item()
+    STATE_ADD_CHANNEL_NAME = Item()
     STATE_ADD_CHANNEL_APPROVE = Item()
     STATE_ADD_CHANNEL_LINK_NAME = Item()
 
@@ -30,4 +31,9 @@ class AppStates(Helper):
     STATE_APPROVE_REQUERSTS = Item()
 
     STATE_APPROVEMENT_SETTINGS = Item()
+
+    STATE_WAIT_PROXY = Item()
+    STATE_WAIT_PHONE = Item()
+    STATE_WAIT_AUTH_CODE = Item()
+    STATE_WAIT_2FA = Item()
     

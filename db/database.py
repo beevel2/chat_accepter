@@ -1,6 +1,4 @@
-
-
-from settings import db_connection, COLLECTION_USER, COLLECTION_MESSAGES, COLLECTION_ADMIN, COLLECTION_CHANNELS
+from settings import db_connection, COLLECTION_USER, COLLECTION_MESSAGES, COLLECTION_ADMIN, COLLECTION_CHANNELS, COLLECTION_ACCOUNTS
 import db.models as models
 
 
@@ -67,6 +65,13 @@ async def get_all_channels_id_and_user_id_mass_send():
                 'users': _users
             })
     return res
+
+
+async def get_all_channels():
+    col_channels = db_connection[COLLECTION_CHANNELS]
+    all_channels = await col_channels.find({}).to_list(99999)
+    
+    return all_channels
 
 
 async def get_count_users():
@@ -146,3 +151,30 @@ async def get_btn_robot_text():
             }
         )
         return 'Я не робот!'
+
+async def get_account_by_phone(phone):
+    col = db_connection[COLLECTION_ACCOUNTS]
+    return await col.find_one({'phone': phone})
+
+
+async def create_account(phone: str, tg_id: int, proxy: dict, start_work:str="00:00", end_work:str="23:59", cooldown=20, deferred_tasks=0) -> int:
+    col = db_connection[COLLECTION_ACCOUNTS]
+    last_acc = await col.find_one({}, sort=[('account_id', pymongo.DESCENDING)])
+    if last_acc:
+        acc_id = last_acc['account_id'] + 1
+    else:
+        acc_id = 1
+    await col.insert_one(
+        {
+            'account_id': acc_id,
+            'tg_id': tg_id,
+            'phone': phone,
+            'proxy': proxy,
+            'start_work': start_work,
+            'end_work': end_work,
+            'cooldown': cooldown,
+            'deferred_tasks': deferred_tasks,
+            'users': []
+        }
+    )
+    return acc_id

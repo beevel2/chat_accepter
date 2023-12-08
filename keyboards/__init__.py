@@ -1,6 +1,10 @@
 from aiogram.types import  InlineKeyboardButton, InlineKeyboardMarkup, \
     ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
+from db import database as db
+
+import math
+
 
 def kb_mass_send(buttons):
     isInline = True
@@ -33,6 +37,9 @@ def kb_mass_send(buttons):
 
 kb_admin = ReplyKeyboardMarkup(
     [
+        [
+            KeyboardButton('Мои каналы')
+        ],
         [
             KeyboardButton('Добавить канал')
         ],
@@ -86,3 +93,29 @@ kb_approve.row(InlineKeyboardButton(text='Да', callback_data='approve_yes'),
 
 kb_cancel = ReplyKeyboardMarkup(resize_keyboard=True)
 kb_cancel.add(KeyboardButton('Отмена'))
+
+
+async def make_my_channels_kb(page: int):
+    channel_list = await db.get_all_channels()
+
+    max_pages = math.ceil(len(channel_list) / 10)
+
+    if page * 10 >= len(channel_list):
+        next_page = 1
+    else:
+        next_page = page + 1
+
+    if page == 1:
+        prew_page = math.ceil(len(channel_list) / 10)
+    else:
+        prew_page = page - 1
+
+
+    kb = InlineKeyboardMarkup()
+    for channel in channel_list[(page-1)*10:page*10+1]:
+        channel_name = str(channel.get('channel_name'))[:50]
+        kb.row(InlineKeyboardButton(text=channel['channel_id'], callback_data=f'channel_{channel["channel_id"]}'),
+               InlineKeyboardButton(text=channel_name, callback_data=f'channel_{channel["channel_id"]}'))
+    kb.row(InlineKeyboardButton(text='⬅️', callback_data=f'list_channel_page_{prew_page}'),
+           InlineKeyboardButton(text='➡️', callback_data=f'list_channel_page_{next_page}'))
+    return kb, max_pages
