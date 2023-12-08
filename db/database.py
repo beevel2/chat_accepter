@@ -178,3 +178,38 @@ async def create_account(phone: str, tg_id: int, proxy: dict, start_work:str="00
         }
     )
     return acc_id
+
+
+async def increment_pending(channel_id: int):
+    col = db_connection[COLLECTION_CHANNELS]
+    channel = await col.find_one(filter={'channel_id': channel_id})
+
+    requests_pending = channel.get('requests_pending')
+    if requests_pending is None:
+        requests_pending = 1
+    else:
+        requests_pending += 1
+    await col.find_one_and_update(
+        {'channel_id': channel_id}, {'$set': {'requests_pending': requests_pending}}
+    )
+
+
+async def increment_accepted(channel_id: int):
+    col = db_connection[COLLECTION_CHANNELS]
+    channel = await col.find_one(filter={'channel_id': channel_id})
+
+    requests_pending = channel.get('requests_accepted')
+    if requests_accepted is None:
+        requests_accepted = 1
+    else:
+        requests_accepted += 1
+    await col.find_one_and_update(
+        {'channel_id': channel_id}, {'$set': {'requests_accepted': requests_accepted}}
+    )
+
+
+async def purge_pending(channel_id: int):
+    col = db_connection[COLLECTION_CHANNELS]
+    await col.find_one_and_update(
+        {'channel_id': channel_id}, {'$set': {'requests_pending': 0}}
+    )

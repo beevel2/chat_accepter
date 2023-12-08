@@ -817,11 +817,13 @@ async def approve_requests_get_id(
         return
 
     added = 0
+    await db.purge_pending(channel['channel_id'])
     for user_id in users:
         try:
             success = await bot.approve_chat_join_request(chat_id=channel['tg_id'], user_id=user_id)
             if success is True:
                 added += 1
+                await db.increment_accepted(channel['channel_id'])
         except Exception as e:
             print(f'error while approving request for channel {channel.get("tg_id")} and user {user_id}; {repr(e)}')
         
