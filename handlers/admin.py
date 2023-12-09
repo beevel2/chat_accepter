@@ -16,6 +16,7 @@ from pyrogram import Client
 from pyrogram.errors import SessionPasswordNeeded, PasswordHashInvalid
 from utils import download_file
 
+import logging
 
 async def start_command(
     message: types.Message,
@@ -940,3 +941,87 @@ async def my_channels_page(
                                     reply_markup=markup)
     except MessageNotModified:
         pass
+
+
+async def channel_menu(query: types.CallbackQuery, state: FSMContext):
+    await state.reset_state()
+    await state.reset_data()
+    try:
+        await query.answer()
+    except Exception as e:
+        logging.exception(msg='biba')
+    channel = await db.get_channel_by_id(int(query.data.split('_')[-1]))
+    page = int(query.data.split('_')[-2])
+    text = f"{channel.get('channel_id')} | {channel.get('channel_name')}\n" \
+           f"Активных заявок: {channel.get('requests_pending')}\n" \
+           f"Одобрено заявок: {channel.get('requests_accepted')}\n" \
+           f"Одобрять заявки? - {'Да' if channel.get('approve') else 'Нет'}\n" \
+           f"Привязанная ссылка: {'Нет' if channel['link_name'] == '0' else channel['link_name']}"
+    try:
+        await query.message.edit_text(text=text,
+                                  reply_markup=await kb.make_channel_menu_kb(channel['channel_id'], page))
+    except MessageNotModified:
+        pass
+
+async def approve_requests(query: types.CallbackQuery, state: FSMContext):
+    channel_id = int(query.data.split('_')[-1])
+    page = int(query.data.split('_')[-2])
+    channel = await db.get_channel_by_id(channel_id)
+    users = await db.get_id_all_users(channel_id)
+
+    added = 0
+    await db.purge_pending(channel['channel_id'])
+    for user_id in users:
+        try:
+            success = await bot.approve_chat_join_request(chat_id=channel['tg_id'], user_id=user_id)
+            if success is True:
+                added += 1
+                await db.increment_accepted(channel['channel_id'])
+        except Exception as e:
+            print(f'error while approving request for channel {channel.get("tg_id")} and user {user_id}; {repr(e)}')
+        
+    await query.answer(f'Одобрены {added} заявок! ✅')
+    query.data = f'channel_{page}_{channel_id}'
+    await channel_menu(query, state)
+
+
+async def switch_approvement(query: types.CallbackQuery, state: FSMContext):
+    channel_id = int(query.data.split('_')[-1])
+    page = int(query.data.split('_')[-2])
+
+    await db.switch_approvement_settings(channel_id)
+    await query.answer('Настройка изменена')
+    
+    query.data = f'channel_{page}_{channel_id}'
+    await channel_menu(query, state)
+
+
+async def change_link_name(query: types.CallbackQuery, state: FSMContext):
+    page = int(query.data.split('_')[-2])
+    channel_id = int(query.data.split('_')[-1])
+    # await state.set_data({'page': page, 'channel_id': channel_id})
+    await state.update_data(page=page)
+    await state.update_data(channel_id=channel_id)
+    await query.answer()
+    await query.message.edit_text(text='Введите название ссылки (или 0 чтобы принимать заявки по всем ссылкам)',
+                                  reply_markup=await kb.make_back_to_channel_menu_kb(channel_id, page))
+    await state.set_state(AppStates.STATE_GET_LINK)
+
+
+async def change_link_name_get(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    page = data['page']
+    channel_id = data['channel_id']
+    markup = await kb.make_back_to_channel_menu_kb(channel_id, page)
+
+    if message.text == '0':
+        text = 'Бот будет принимать заявки по всем ссылкам'
+    else:
+        text = f'Название ссылки по которой будут приниматься заявки изменено на "{message.text}"'
+
+    await db.change_link_name(channel_id, message.text)
+    await bot.send_message(chat_id=message.chat.id,
+                           text=text,
+                           reply_markup=markup)
+    await state.reset_state()
+    await state.reset_data()

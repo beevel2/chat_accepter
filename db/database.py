@@ -198,7 +198,7 @@ async def increment_accepted(channel_id: int):
     col = db_connection[COLLECTION_CHANNELS]
     channel = await col.find_one(filter={'channel_id': channel_id})
 
-    requests_pending = channel.get('requests_accepted')
+    requests_accepted = channel.get('requests_accepted')
     if requests_accepted is None:
         requests_accepted = 1
     else:
@@ -212,4 +212,19 @@ async def purge_pending(channel_id: int):
     col = db_connection[COLLECTION_CHANNELS]
     await col.find_one_and_update(
         {'channel_id': channel_id}, {'$set': {'requests_pending': 0}}
+    )
+
+async def switch_approvement_settings(channel_id: int):
+    col = db_connection[COLLECTION_CHANNELS]
+    channel = await col.find_one(filter={'channel_id': channel_id})
+
+    await col.find_one_and_update(
+        {'channel_id': channel_id}, {'$set': {'approve': not channel['approve']}}
+    )
+
+
+async def change_link_name(channel_id: int, link_name: str):
+    col = db_connection[COLLECTION_CHANNELS]
+    await col.find_one_and_update(
+        {'channel_id': channel_id}, {'$set': {'link_name': link_name}}
     )

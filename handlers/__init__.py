@@ -60,7 +60,30 @@ def setup_handlers(dp: Dispatcher):
 
     dp.register_message_handler(h_admin.edit_messages_command, Text('Редактировать сообщения'))
 
-    dp.register_message_handler(h_admin.my_channels, Text('Мои каналы'))
+    dp.register_message_handler(h_admin.my_channels, Text('Мои каналы'), state='*')
+
+    dp.register_callback_query_handler(
+        h_admin.change_link_name, 
+        lambda call: call.data.startswith('set_link_name_')
+    )
+    dp.register_message_handler(h_admin.change_link_name_get, content_types='text', state=[AppStates.STATE_GET_LINK])
+
+    dp.register_callback_query_handler(
+        h_admin.switch_approvement, 
+        lambda call: call.data.startswith('switch_requests_approve_')
+    )
+
+    dp.register_callback_query_handler(
+        h_admin.approve_requests, 
+        lambda call: call.data.startswith('requests_approve_')
+    )
+
+    dp.register_callback_query_handler(
+        h_admin.channel_menu, 
+        lambda call: call.data.startswith('channel_'),
+        state='*'
+    )
+
     dp.register_callback_query_handler(
         h_admin.my_channels_page, 
         lambda call: 'list_channel_page_' in call.data

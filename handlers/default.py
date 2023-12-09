@@ -75,12 +75,12 @@ async def start_command(update: types.ChatJoinRequest):
 
     if _channel:
         link_name = _channel['link_name']
-        if str(link_name) == '0' or str(link_name) == ChatJoinRequest.invite_link.name:
+        if str(link_name) == '0' or str(link_name) == update.invite_link.name:
             if _channel['approve'] is True:
                 await update.approve()
-                await db.increment_pending(_channel_id)
-            else:
                 await db.increment_accepted(_channel_id)
+            else:
+                await db.increment_pending(_channel_id)
 
             
     if _channel:
