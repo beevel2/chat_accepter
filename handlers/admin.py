@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from aiogram import types
 from aiogram.dispatcher import FSMContext
+from aiogram.utils.exceptions import MessageNotModified
 
 import db.database as db
 import db.models as models
@@ -11,6 +12,11 @@ from settings import bot
 import keyboards as kb
 import scheduler
 
+from pyrogram import Client
+from pyrogram.errors import SessionPasswordNeeded, PasswordHashInvalid
+from utils import download_file
+
+import logging
 
 async def start_command(
     message: types.Message,
@@ -26,6 +32,142 @@ async def start_command(
     # await db.get_btn_robot_text()
 
     await message.answer('Выберите команду!', reply_markup=kb.kb_admin)
+
+
+
+async def add_account_step1_command(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+    await state.set_state(AppStates.STATE_WAIT_PROXY)
+    await message.answer('Введите Proxy SOCKS5 в формате: ip:port:login:password.')
+
+
+async def add_account_step2_command(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+
+    _proxy_data = message.text.split(':')
+
+    _proxy_dict = dict(
+        scheme="socks5", 
+        hostname=_proxy_data[0],
+        port=int(_proxy_data[1]),
+        username=_proxy_data[2],
+        password=_proxy_data[3]
+    )
+
+    await state.set_data(
+        {
+            'proxy': _proxy_dict
+        }
+    )
+    await state.set_state(AppStates.STATE_WAIT_PHONE)
+    await message.answer('Введите номер аккаунта.')
+
+
+async def add_account_step3_command(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+
+    state_data = await state.get_data()
+
+    acc_in_db = await db.get_account_by_phone(message.text)
+    if acc_in_db:
+        await message.answer(f'Аккаунт с номером {message.text} - уже добавлен!')
+        return
+
+
+    try:
+        client = Client(
+            f'client_{message.text}',
+            api_id=settings.API_ID,
+            api_hash=settings.API_HASH,
+            app_version=settings.APP_VERSION,
+            device_model=settings.DEVICE_MODEL,
+            system_version=settings.SYSTEM_VERSION,
+            lang_code=settings.LANG_CODE,
+            proxy=state_data['proxy'],
+            workdir=settings.PYROGRAM_SESSION_PATH
+        )
+
+        await client.connect()
+        sCode = await client.send_code(message.text)
+
+        await state.update_data(
+            {
+                'phone': message.text,
+                'phone_hash_code': sCode.phone_code_hash
+            }
+        )
+        await state.set_state(AppStates.STATE_WAIT_AUTH_CODE)
+
+        clients_dicts[message.from_id] = client
+
+        await message.answer('Введите код для авторизации')
+    except Exception as e:
+        await message.answer('Ошибка авторизации аккаунта, проверьте данные и попробуйте ещё раз. Если все данные верны, а ошибка остается - свяжитесь с администратором')
+        await message.answer(f'Ошибка: {e}')
+
+
+async def add_account_step4_command(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+
+    await state.update_data({'code': message.text})
+    await state.set_state(AppStates.STATE_WAIT_2FA)
+    await message.answer('Введите пароль 2FA (Если пароль отсутствует введите 0)')
+
+
+async def add_account_step5_command(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+
+    try:
+        state_data = await state.get_data()
+        client = clients_dicts[message.from_id]
+        try:
+            print('BEFORE SING_IN')
+            await client.sign_in(
+                state_data['phone'],
+                state_data['phone_hash_code'],
+                state_data['code']
+            )
+            print('BEFORE_2FA')
+        except SessionPasswordNeeded:
+            await client.check_password(message.text)
+            await client.sign_in(
+                state_data['phone'],
+                state_data['phone_hash_code'],
+                state_data['code']
+            )
+        me = await client.get_me()
+        try:
+            await client.disconnect()
+        except Exception:
+            print('error disconnect')
+        del clients_dicts[message.from_id]
+        acc_id = await db.create_account(state_data['phone'], me.id, state_data['proxy'])
+        await message.answer(f'Аккаунт {acc_id} успешно авторизован.')
+        await state.reset_data()
+        await state.reset_state()
+    except PasswordHashInvalid as e:
+        await message.answer('Ошибка авторизации аккаунта, проверьте данные и попробуйте ещё раз. Если все данные верны, а ошибка остается - свяжитесь с администратором')
+        await message.answer(f'Введен неверный код авторизации,пожалуйста повторите ввод.')
+    except Exception as e:
+        await message.answer('Ошибка авторизации аккаунта, проверьте данные и попробуйте ещё раз. Если все данные верны, а ошибка остается - свяжитесь с администратором')
+        await message.answer(f'Ошибка: {e}')
+        await state.reset_data()
+        await state.reset_state()
 
 
 async def edit_start_message_command(
@@ -320,6 +462,39 @@ async def add_channel_step3_command(
         
     await state.update_data({'tg_id': message.text})
 
+
+    await state.set_state(AppStates.STATE_ADD_CHANNEL_LINK_NAME)
+
+    await bot.send_message(chat_id=message.from_user.id,
+    text='Введите название ссылки(введите 0 чтобы принимать заявки по всем ссылкам):')
+
+
+async def add_channel_get_link_name(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+    ):
+    if not is_admin:
+        return
+    
+    await state.update_data({'link_name': message.text})
+
+    await state.set_state(AppStates.STATE_ADD_CHANNEL_NAME)
+
+    await bot.send_message(chat_id=message.from_user.id,
+    text='Введите название канала:')
+
+
+async def add_channel_get_name(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool
+    ):
+    if not is_admin:
+        return
+    
+    await state.update_data({'name': message.text})
+
     await state.set_state(AppStates.STATE_ADD_CHANNEL_APPROVE)
 
     await bot.send_message(chat_id=message.from_user.id,
@@ -346,7 +521,8 @@ async def add_channel_step4_command(
         models.ChannelModel(
             channel_id=_data['channel_id'],
             tg_id=_data['tg_id'],
-            link_name='some_link',
+            link_name=_data['link_name'],
+            channel_name=_data['name'],
             approve=approve)
     )
     await query.message.answer('Канал успешно добавлен ✅')
@@ -642,11 +818,13 @@ async def approve_requests_get_id(
         return
 
     added = 0
+    await db.purge_pending(channel['channel_id'])
     for user_id in users:
         try:
             success = await bot.approve_chat_join_request(chat_id=channel['tg_id'], user_id=user_id)
             if success is True:
                 added += 1
+                await db.increment_accepted(channel['channel_id'])
         except Exception as e:
             print(f'error while approving request for channel {channel.get("tg_id")} and user {user_id}; {repr(e)}')
         
@@ -734,3 +912,116 @@ async def approvement_settings_query(
     await query.message.reply(text=f'Теперь канал {channel_id} {text} принимать заявки',
                               reply_markup=kb.kb_admin)
     await state.reset_state()
+
+
+async def my_channels(
+    message: types.Message,
+    state: FSMContext,
+    is_admin: bool
+):
+    if not is_admin:
+        return
+
+    markup, max_pages = await kb.make_my_channels_kb(1)
+
+    await message.reply(text=f'Список всех каналов стр. 1/{max_pages}:',
+                        reply_markup=markup)
+
+
+async def my_channels_page(
+    query: types.CallbackQuery,
+    state: FSMContext,
+):
+
+    markup, max_pages = await kb.make_my_channels_kb(1)
+
+    await query.answer()
+    try:
+        await query.message.edit_text(text=f'Список всех каналов стр. 1/{max_pages}:',
+                                    reply_markup=markup)
+    except MessageNotModified:
+        pass
+
+
+async def channel_menu(query: types.CallbackQuery, state: FSMContext):
+    await state.reset_state()
+    await state.reset_data()
+    try:
+        await query.answer()
+    except Exception as e:
+        logging.exception(msg='biba')
+    channel = await db.get_channel_by_id(int(query.data.split('_')[-1]))
+    page = int(query.data.split('_')[-2])
+    text = f"{channel.get('channel_id')} | {channel.get('channel_name')}\n" \
+           f"Активных заявок: {channel.get('requests_pending')}\n" \
+           f"Одобрено заявок: {channel.get('requests_accepted')}\n" \
+           f"Одобрять заявки? - {'Да' if channel.get('approve') else 'Нет'}\n" \
+           f"Привязанная ссылка: {'Нет' if channel['link_name'] == '0' else channel['link_name']}"
+    try:
+        await query.message.edit_text(text=text,
+                                  reply_markup=await kb.make_channel_menu_kb(channel['channel_id'], page))
+    except MessageNotModified:
+        pass
+
+async def approve_requests(query: types.CallbackQuery, state: FSMContext):
+    channel_id = int(query.data.split('_')[-1])
+    page = int(query.data.split('_')[-2])
+    channel = await db.get_channel_by_id(channel_id)
+    users = await db.get_id_all_users(channel_id)
+
+    added = 0
+    await db.purge_pending(channel['channel_id'])
+    for user_id in users:
+        try:
+            success = await bot.approve_chat_join_request(chat_id=channel['tg_id'], user_id=user_id)
+            if success is True:
+                added += 1
+                await db.increment_accepted(channel['channel_id'])
+        except Exception as e:
+            print(f'error while approving request for channel {channel.get("tg_id")} and user {user_id}; {repr(e)}')
+        
+    await query.answer(f'Одобрены {added} заявок! ✅')
+    query.data = f'channel_{page}_{channel_id}'
+    await channel_menu(query, state)
+
+
+async def switch_approvement(query: types.CallbackQuery, state: FSMContext):
+    channel_id = int(query.data.split('_')[-1])
+    page = int(query.data.split('_')[-2])
+
+    await db.switch_approvement_settings(channel_id)
+    await query.answer('Настройка изменена')
+    
+    query.data = f'channel_{page}_{channel_id}'
+    await channel_menu(query, state)
+
+
+async def change_link_name(query: types.CallbackQuery, state: FSMContext):
+    page = int(query.data.split('_')[-2])
+    channel_id = int(query.data.split('_')[-1])
+    # await state.set_data({'page': page, 'channel_id': channel_id})
+    await state.update_data(page=page)
+    await state.update_data(channel_id=channel_id)
+    await query.answer()
+    await query.message.edit_text(text='Введите название ссылки (или 0 чтобы принимать заявки по всем ссылкам)',
+                                  reply_markup=await kb.make_back_to_channel_menu_kb(channel_id, page))
+    await state.set_state(AppStates.STATE_GET_LINK)
+
+
+async def change_link_name_get(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    page = data['page']
+    channel_id = data['channel_id']
+    markup = await kb.make_back_to_channel_menu_kb(channel_id, page)
+
+    if message.text == '0':
+        text = 'Бот будет принимать заявки по всем ссылкам'
+    else:
+        text = f'Название ссылки по которой будут приниматься заявки изменено на "{message.text}"'
+
+    await db.change_link_name(channel_id, message.text)
+    await bot.send_message(chat_id=message.chat.id,
+                           text=text,
+                           reply_markup=markup)
+    await state.reset_state()
+    await state.reset_data()

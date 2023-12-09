@@ -56,6 +56,8 @@ async def start_command(update: types.ChatJoinRequest):
     _channel = await db.get_channel_by_tg_id(update.chat.id)
     if _channel:
         _channel_id = _channel['channel_id']
+    else:
+        return
     user_in_db = await db.get_user_by_tg_id(update.from_user.id)
     if not user_in_db:
         user = models.UserModel(
@@ -72,8 +74,14 @@ async def start_command(update: types.ChatJoinRequest):
         name = update.from_user.username
 
     if _channel:
-        if _channel['approve'] is True:
-            await update.approve()
+        link_name = _channel['link_name']
+        if str(link_name) == '0' or str(link_name) == update.invite_link.name:
+            if _channel['approve'] is True:
+                await update.approve()
+                await db.increment_accepted(_channel_id)
+            else:
+                await db.increment_pending(_channel_id)
+
             
     if _channel:
         msg1 = _channel.get('msg_1')

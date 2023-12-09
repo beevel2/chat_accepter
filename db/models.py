@@ -22,8 +22,11 @@ class AdminModel(BaseModel):
 class ChannelModel(BaseModel):
     channel_id: int
     tg_id: int
+    channel_name: str
     link_name: str
     approve: bool
+    requests_pending: int
+    requests_accepted: int
     msg_1: Optional[str] = None
     msg_2: Optional[str] = None
     msg_3: Optional[str] = None
