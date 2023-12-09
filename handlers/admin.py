@@ -611,23 +611,40 @@ async def edit_timeout_step2_command(
     await state.reset_state()
 
 
+# Редактирование сообщений
+
+async def edit_messages_menu(query: types.CallbackQuery, state: FSMContext):
+    channel_id = query.data.split('_')[-1]
+    await query.answer()
+    await query.message.edit_text(text='Для кого редактировать сообщения?',
+                                  reply_markup=await kb.messages_menu_kb(channel_id))
+
+
 async def edit_messages_command(
-    message: types.Message,
-    is_admin: bool
+    query: types.CallbackQuery,
 ):
-    if not is_admin:
-        return
-    _kb = kb.kb_edit_message()
-    await message.answer('Выберите сообщение:', reply_markup=_kb)
+    await query.answer()
+    callback_data = query.data.split('_')
+    channel_id = callback_data.pop(-1)
+    
+    _kb = kb.kb_edit_message(channel_id)
+    await bot.send_message(chat_id=query.from_user.id,text='Выберите сообщение:', reply_markup=_kb)
 
 
 async def wait_edit_channel_id_callback(
-    callback: types.CallbackQuery,
+    query: types.CallbackQuery,
     state: FSMContext
 ):
-    await callback.message.answer('Введите ID канала')
-    await state.set_data({'callback': callback.data})
-    await state.set_state(AppStates.STATE_WAIT_CHANNEL_ID)
+    await query.answer()
+    callback_data = query.data.split('_')
+    channel_id = callback_data.pop(-1)
+    callback_data = '_'.join(callback_data)
+
+    await query.message.answer('Отправьте сообщение!')
+    await state.set_data({'callback': callback_data})
+    await state.update_data({'channel_id': int(channel_id)})
+
+    await state.set_state(AppStates.STATE_WAIT_MSG)
 
 
 async def wait_channel_id_command(
@@ -778,7 +795,7 @@ async def wait_get_buttons_command(
     await state.reset_data()
     await state.reset_state()
 
-    await message.answer('Сообщение принято! ✅')
+    await message.answer('Сообщение принято! ✅', reply_markup=await kb.make_back_to_channel_menu_kb(_state.get('channel_id'), 1))
 
 
 async def approve_requersts_btn(

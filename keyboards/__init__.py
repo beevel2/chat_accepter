@@ -52,16 +52,16 @@ kb_admin = ReplyKeyboardMarkup(
         [
             KeyboardButton('Изменить таймаут отправки сообщения')
         ],
-        [
-            KeyboardButton('Редактировать сообщения')
-        ],
-        [
-            KeyboardButton('Приём заявок')
-        ],
-        [
-            KeyboardButton('Одобрить заявки')
+        # [
+        #     KeyboardButton('Редактировать сообщения')
+        # ],
+        # [
+        #     KeyboardButton('Приём заявок')
+        # ],
+        # [
+        #     KeyboardButton('Одобрить заявки')
 
-        ]
+        # ]
     ], resize_keyboard=True
 )
 
@@ -73,16 +73,16 @@ kb_robot = ReplyKeyboardMarkup(
     ], resize_keyboard=True
 )
 
-def kb_edit_message():
+def kb_edit_message(channel_id: int):
     _kb = InlineKeyboardMarkup(row_width=1)
-    _kb.add(InlineKeyboardButton('Приветственное', callback_data='edit_msg_priv'))
-    _kb.add(InlineKeyboardButton('Взаимодействие 1', callback_data='edit_msg_vz1'))
-    _kb.add(InlineKeyboardButton('Взаимодействие 2', callback_data='edit_msg_vz2'))
-    _kb.add(InlineKeyboardButton('Подтверждение', callback_data='edit_msg_submit'))
-    _kb.add(InlineKeyboardButton('Ознакомление', callback_data='edit_msg_ozn'))
-    _kb.add(InlineKeyboardButton('Информация 1', callback_data='edit_msg_info1'))
-    _kb.add(InlineKeyboardButton('Информация 2', callback_data='edit_msg_info2'))
-    _kb.add(InlineKeyboardButton('Рассылка', callback_data='edit_msg_mass'))
+    _kb.add(InlineKeyboardButton('Приветственное', callback_data=f'edit_msg_priv_{channel_id}'))
+    _kb.add(InlineKeyboardButton('Взаимодействие 1', callback_data=f'edit_msg_vz1_{channel_id}'))
+    _kb.add(InlineKeyboardButton('Взаимодействие 2', callback_data=f'edit_msg_vz2_{channel_id}'))
+    _kb.add(InlineKeyboardButton('Подтверждение', callback_data=f'edit_msg_submit_{channel_id}'))
+    _kb.add(InlineKeyboardButton('Ознакомление', callback_data=f'edit_msg_ozn_{channel_id}'))
+    _kb.add(InlineKeyboardButton('Информация 1', callback_data=f'edit_msg_info1_{channel_id}'))
+    _kb.add(InlineKeyboardButton('Информация 2', callback_data=f'edit_msg_info2_{channel_id}'))
+    _kb.add(InlineKeyboardButton('Рассылка', callback_data=f'edit_msg_mass_{channel_id}'))
     return _kb
 
 
@@ -154,3 +154,10 @@ async def make_back_to_channel_menu_kb(channel_id: int, page: int):
     kb.add(InlineKeyboardButton(text='🔙 Назад', callback_data=f'channel_{page}_{channel_id}'))
 
     return kb 
+
+
+async def messages_menu_kb(channel_id: int):
+    kb = InlineKeyboardMarkup(row_width=2)
+    kb.add(InlineKeyboardButton(text='Для бота', callback_data=f'bot_edit_messages_{channel_id}'),
+           InlineKeyboardButton(text='Для юзер-бота', callback_data=f'userbot_edit_messages_{channel_id}'))
+    return kb
