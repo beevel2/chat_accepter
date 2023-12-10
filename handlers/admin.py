@@ -218,6 +218,14 @@ async def add_account_step5_command(
         await state.reset_state()
 
 
+async def del_account(
+    query: types.CallbackQuery,
+    state: FSMContext):
+    await db.del_account(int(query.data.split('_')[-1]))
+    await query.answer('Аккаунт удален!')
+    query.data = f'channel_{query.data.split('_')[-2]}_{query.data.split('_')[-1]}'
+
+
 async def edit_start_message_command(
         message: types.Message,
         state: FSMContext,

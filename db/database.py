@@ -231,7 +231,14 @@ async def fetch_account_by_id(acc_id: int):
     return account
 
 
-async def retie_accout(phone: str, acc_id):
+async def retie_account(phone: str, acc_id):
+    col = db_connection[COLLECTION_ACCOUNTS]
     account = await get_account_by_phone(phone)
     account['acc_id'] = acc_id
     await col.insert_one(account)
+
+
+async def del_account(acc_id: int):
+    col = db_connection[COLLECTION_ACCOUNTS]
+    await col.delete_one({'acc_id': acc_id})
+

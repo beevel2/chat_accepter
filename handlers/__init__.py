@@ -72,6 +72,9 @@ def setup_handlers(dp: Dispatcher):
 
     dp.register_message_handler(h_admin.my_channels, Text('Мои каналы'), state='*')
 
+    dp.register_callback_query_handler(h_admin.del_account,
+                                       lambda c: c.data.startswith('delete_account_'))
+
     dp.register_callback_query_handler(
         h_admin.change_link_name, 
         lambda call: call.data.startswith('set_link_name_')

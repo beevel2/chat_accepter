@@ -124,17 +124,20 @@ async def make_my_channels_kb(page: int):
 async def make_channel_menu_kb(channel_id: int, page: int):
     channel = await db.get_channel_by_id(channel_id)
     kb = InlineKeyboardMarkup(row_width=1)
+    
+    tie_btn = InlineKeyboardButton(text='Привязать юзербота',
+                                   callback_data=f'tie_account_{page}_{channel_id}')
+    account = await db.fetch_account_by_id(channel_id)
+    if account:
+        tie_btn = InlineKeyboardButton(text='Удалить юзербота',
+                                       callback_data=f'delete_account_{page}_{channel_id}'),
+
     kb.add(InlineKeyboardButton(text=f'Одобрить заявки ({channel.get("requests_pending")})',
                                       callback_data=f'requests_approve_{page}_{channel_id}'),
 
                  InlineKeyboardButton(text=f'{"Выключить" if channel.get("approve") else "Включить"} приём заявок',
                                       callback_data=f'switch_requests_approve_{page}_{channel_id}'),
-
-                 InlineKeyboardButton(text='Привязать юзербота',
-                                      callback_data=f'tie_account_{page}_{channel_id}'),
-
-                 InlineKeyboardButton(text='Удалить юзербота',
-                                      callback_data=f'delete_account_{page}_{channel_id}'),
+                 tie_btn,
 
                  InlineKeyboardButton(text='Задать название ссылки', 
                                       callback_data=f'set_link_name_{page}_{channel_id}'),
