@@ -163,3 +163,4 @@ test.py
 settings.py
 *.txt
 settings.py
+sessions/

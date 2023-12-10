@@ -9,6 +9,7 @@ import db.database as db
 import db.models as models
 from states import AppStates
 from settings import bot
+import settings
 import keyboards as kb
 import scheduler
 
@@ -17,6 +18,8 @@ from pyrogram.errors import SessionPasswordNeeded, PasswordHashInvalid
 from utils import download_file
 
 import logging
+
+clients_dicts = {}
 
 async def start_command(
     message: types.Message,
@@ -36,12 +39,22 @@ async def start_command(
 
 
 async def add_account_step1_command(
-    message: types.Message,
+    query: types.CallbackQuery,
     state: FSMContext,
-    is_admin: bool
 ):
+    await query.answer()
+    channel_id = int(query.data.split('_')[-1])
+    page = int(query.data.split('_')[-2])
+    await state.set_data(
+        {
+            'acc_id': channel_id
+        }
+    )
+    markup = await kb.make_back_to_channel_menu_kb(channel_id, page)
+    await state.update_data(markup=markup)
     await state.set_state(AppStates.STATE_WAIT_PROXY)
-    await message.answer('Введите Proxy SOCKS5 в формате: ip:port:login:password.')
+    await query.message.edit_text(text='Введите Proxy SOCKS5 в формате: ip:port:login:password.',
+                                  reply_markup=markup)
 
 
 async def add_account_step2_command(
@@ -66,8 +79,10 @@ async def add_account_step2_command(
         }
     )
     await state.set_state(AppStates.STATE_WAIT_PHONE)
-    await message.answer('Введите номер аккаунта.')
-
+    data = await state.get_data()
+    markup = data['markup']
+    await message.answer('Введите номер телефона аккаунта.',
+                         reply_markup=markup)
 
 async def add_account_step3_command(
     message: types.Message,
@@ -78,10 +93,12 @@ async def add_account_step3_command(
     state_data = await state.get_data()
 
     acc_in_db = await db.get_account_by_phone(message.text)
-    if acc_in_db:
-        await message.answer(f'Аккаунт с номером {message.text} - уже добавлен!')
-        return
 
+    if acc_in_db:
+        await message.reply(f'Аккаунт с номером {message.text} - уже добавлен! Привязать его и к этому каналу?',
+                            reply_markup=kb.retie_kb)
+        await state.update_data(phone=message.text)
+        return
 
     try:
         client = Client(
@@ -109,10 +126,33 @@ async def add_account_step3_command(
 
         clients_dicts[message.from_id] = client
 
-        await message.answer('Введите код для авторизации')
+        markup = state_data['markup']
+        await message.answer('Введите код для авторизации',
+                             reply_markup=markup)
     except Exception as e:
         await message.answer('Ошибка авторизации аккаунта, проверьте данные и попробуйте ещё раз. Если все данные верны, а ошибка остается - свяжитесь с администратором')
         await message.answer(f'Ошибка: {e}')
+
+
+async def retie_account(
+    query: types.CallbackQuery,
+    state: FSMContext):
+
+    await query.answer()
+    data = await satate.get_data()
+    markup = data['markup']
+    if query.data.endswith('no'):
+        await state.reset_state()
+        await query.message.edit_text(text='Добавление отменено, повторите действия',
+                                      reply_markup=markup)
+    else:
+        data = await state.get_data()
+        phone = data['phone']
+        acc_id = data['acc_id']
+        await db.retie_account(phone, acc_id)
+        await state.reset_state()
+        await query.message.edit_text(text='Аккаунт привязан!',
+                                      reply_markup=markup)
 
 
 async def add_account_step4_command(
@@ -120,10 +160,11 @@ async def add_account_step4_command(
     state: FSMContext,
     is_admin: bool
 ):
-
+    data = await state.get_data()
     await state.update_data({'code': message.text})
     await state.set_state(AppStates.STATE_WAIT_2FA)
-    await message.answer('Введите пароль 2FA (Если пароль отсутствует введите 0)')
+    await message.answer('Введите пароль 2FA (Если пароль отсутствует введите 0)',
+                         reply_markup = data['markup'])
 
 
 async def add_account_step5_command(
@@ -156,15 +197,22 @@ async def add_account_step5_command(
         except Exception:
             print('error disconnect')
         del clients_dicts[message.from_id]
-        acc_id = await db.create_account(state_data['phone'], me.id, state_data['proxy'])
-        await message.answer(f'Аккаунт {acc_id} успешно авторизован.')
+        acc_id = state_data['acc_id']
+        await db.create_account(state_data['phone'], me.id, state_data['proxy'], acc_id)
+        markup = state_data['markup']
+        await message.reply(f'Аккаунт {acc_id} успешно авторизован.',
+                            reply_markup=markup)
         await state.reset_data()
         await state.reset_state()
     except PasswordHashInvalid as e:
-        await message.answer('Ошибка авторизации аккаунта, проверьте данные и попробуйте ещё раз. Если все данные верны, а ошибка остается - свяжитесь с администратором')
+        state_data = await state.get_data()
+        await message.answer('Ошибка авторизации аккаунта, проверьте данные и попробуйте ещё раз. Если все данные верны, а ошибка остается - свяжитесь с администратором',
+            reply_markup=state_data.markup)
         await message.answer(f'Введен неверный код авторизации,пожалуйста повторите ввод.')
     except Exception as e:
-        await message.answer('Ошибка авторизации аккаунта, проверьте данные и попробуйте ещё раз. Если все данные верны, а ошибка остается - свяжитесь с администратором')
+        state_data = await state.get_data()
+        await message.answer('Ошибка авторизации аккаунта, проверьте данные и попробуйте ещё раз. Если все данные верны, а ошибка остается - свяжитесь с администратором',
+                            reply_markup=state_data.markup)
         await message.answer(f'Ошибка: {e}')
         await state.reset_data()
         await state.reset_state()
@@ -523,7 +571,9 @@ async def add_channel_step4_command(
             tg_id=_data['tg_id'],
             link_name=_data['link_name'],
             channel_name=_data['name'],
-            approve=approve)
+            approve=approve,
+            requests_pending=0,
+            requests_accepted=0)
     )
     await query.message.answer('Канал успешно добавлен ✅')
     await state.reset_data()

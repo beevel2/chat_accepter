@@ -157,13 +157,8 @@ async def get_account_by_phone(phone):
     return await col.find_one({'phone': phone})
 
 
-async def create_account(phone: str, tg_id: int, proxy: dict, start_work:str="00:00", end_work:str="23:59", cooldown=20, deferred_tasks=0) -> int:
+async def create_account(phone: str, tg_id: int, proxy: dict, acc_id:int,start_work:str="00:00", end_work:str="23:59", cooldown=20, deferred_tasks=0) -> int:
     col = db_connection[COLLECTION_ACCOUNTS]
-    last_acc = await col.find_one({}, sort=[('account_id', pymongo.DESCENDING)])
-    if last_acc:
-        acc_id = last_acc['account_id'] + 1
-    else:
-        acc_id = 1
     await col.insert_one(
         {
             'account_id': acc_id,
@@ -228,3 +223,15 @@ async def change_link_name(channel_id: int, link_name: str):
     await col.find_one_and_update(
         {'channel_id': channel_id}, {'$set': {'link_name': link_name}}
     )
+
+async def fetch_account_by_id(acc_id: int):
+    col = db_connection[COLLECTION_ACCOUNTS]
+    account = await col.find_one(filter={'acc_id': acc_id})
+
+    return account
+
+
+async def retie_accout(phone: str, acc_id):
+    account = await get_account_by_phone(phone)
+    account['acc_id'] = acc_id
+    await col.insert_one(account)

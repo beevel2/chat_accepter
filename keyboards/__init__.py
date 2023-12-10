@@ -161,3 +161,7 @@ async def messages_menu_kb(channel_id: int):
     kb.add(InlineKeyboardButton(text='Для бота', callback_data=f'bot_edit_messages_{channel_id}'),
            InlineKeyboardButton(text='Для юзер-бота', callback_data=f'userbot_edit_messages_{channel_id}'))
     return kb
+
+retie_kb = InlineKeyboardMarkup(row_width=2)
+retie_kb.add(InlineKeyboardButton(text='Да', callback_data='retie_acc_yes'),
+             InlineKeyboardButton(text='Нет', callback_data='retie_acc_no'))

@@ -16,9 +16,13 @@ def setup_handlers(dp: Dispatcher):
 
     dp.register_message_handler(h_admin.cancel, Text('Отмена'))
 
-    # dp.register_message_handler(h_admin.add_account_step1_command, Text('Подключить аккаунт'))
+    dp.register_callback_query_handler(h_admin.add_account_step1_command,
+                                lambda c: c.data.startswith('tie_account_'))
     dp.register_message_handler(h_admin.add_account_step2_command, state=[AppStates.STATE_WAIT_PROXY], regexp=r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+:[^:]+:[^:]+")
     dp.register_message_handler(h_admin.add_account_step3_command, state=[AppStates.STATE_WAIT_PHONE], regexp=r"\d+")
+    dp.register_callback_query_handler(h_admin.retie_account, 
+                                       lambda c: c.data.startswith('retie_acc_'),
+                                       state=[AppStates.STATE_WAIT_PHONE])
     dp.register_message_handler(h_admin.add_account_step4_command, state=[AppStates.STATE_WAIT_AUTH_CODE])
     dp.register_message_handler(h_admin.add_account_step5_command, state=[AppStates.STATE_WAIT_2FA])
 
