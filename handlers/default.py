@@ -156,13 +156,14 @@ async def send_userbot_messages(user_id: int, channel, name):
         requests = app.get_chat_join_requests(channel['tg_id'])
         async for request in requests:
             pass
-
+        async for member in app.get_chat_members(channel['tg_id']):
+            pass
         if channel.get('msg_u_1'):
             await send_admin_message(channel['msg_u_1'], user_id, name, app)
             await asyncio.sleep(60 * 1)
 
         if channel.get('msg_u_2'):
-            await send_admin_message(channel['msg_u_3'], user_id, name, app)
+            await send_admin_message(channel['msg_u_2'], user_id, name, app)
             await asyncio.sleep(60 * 1)
         
         if channel.get('msg_u_3'):
