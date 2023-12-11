@@ -779,8 +779,12 @@ async def wait_get_message_command(
         await state.set_state(AppStates.STATE_WAIT_MSG_MASS_SEND_TIME)
         await message.answer('Введите время по МСК. (В формате hh:mm)')
     else:
-        await state.set_state(AppStates.STATE_WAIT_MSG_BUTTON)
-        await message.answer('Введите кнопки')
+        if _state['edit_type'] == 'bot':
+            await state.set_state(AppStates.STATE_WAIT_MSG_BUTTON)
+            await message.answer('Введите кнопки')
+        else:
+            message.text = '0'
+            await wait_get_buttons_command(message, state, is_admin)
 
 
 async def wait_get_mass_send_time_command(
