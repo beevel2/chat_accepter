@@ -1117,3 +1117,61 @@ async def change_link_name_get(message: types.Message, state: FSMContext):
                            reply_markup=markup)
     await state.reset_state()
     await state.reset_data()
+
+
+async def set_delay_menu(
+    query: types.CallbackQuery,
+    state: FSMContext
+    ):
+    await query.answer()
+
+    callback_data = query.data.split('_')
+    page = callback_data[-2]
+    channel_id = callback_data[-1]
+
+    markup = await kb.delay_menu(channel_id, page)
+    await query.message.edit_text(text='Для кого редактировать задержку?', 
+                                  reply_markup=markup)
+
+
+async def set_delay(
+    query: types.CallbackQuery,
+    state: FSMContext
+    ):
+    await query.answer()
+
+    callback_data = query.data.split('_')
+    page = callback_data[-2]
+    channel_id = callback_data[-1]
+    delay_key = callback_data[-3]
+
+    await query.message.edit_text('Введите задержку в секундах:',
+                                  reply_markup=await kb.make_back_to_channel_menu_kb(channel_id, page))
+
+    await state.set_state(AppStates.STATE_GET_DELAY)
+    await state.update_data(page=page, channel_id=channel_id, delay_key=delay_key)
+
+
+async def set_delay_get_message(
+    message: types.Message,
+    state: FSMContext,
+    ):
+    data = await state.get_data()
+    page = data['page']
+    channel_id = data['channel_id']
+    delay_key = data['delay_key']    
+
+    markup = await kb.make_back_to_channel_menu_kb(channel_id, page)
+
+    try:
+        delay = int(message.text)
+    except ValueError:
+        await message.reply(text='Задержка должна быть числом (в секундах)',
+                            reply_markup=markup)
+        return
+
+    await db.set_delay(int(channel_id), delay, delay_key)
+    await message.answer(text=f'Задержка на {channel_id} канале для {delay_key} теперь {delay} секунд',
+                         reply_markup=markup)
+    await state.reset_state()
+    await state.reset_data()

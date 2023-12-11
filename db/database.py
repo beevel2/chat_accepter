@@ -237,3 +237,15 @@ async def del_account(acc_id: int):
     col = db_connection[COLLECTION_ACCOUNTS]
     await col.delete_one({'account_id': acc_id})
 
+
+async def set_delay(channel_id: int, delay: int, delay_key: str):
+    col = db_connection[COLLECTION_CHANNELS]
+    if delay_key == 'bot':
+        await col.find_one_and_update(
+            {'channel_id': channel_id}, {'$set': {'bot_delay': delay}}
+        )
+    else:
+        await col.find_one_and_update(
+            {'channel_id': channel_id}, {'$set': {'userbot_delay': delay}}
+        )
+

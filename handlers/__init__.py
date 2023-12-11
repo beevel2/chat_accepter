@@ -65,6 +65,13 @@ def setup_handlers(dp: Dispatcher):
                                        lambda c: c.data.startswith('bot_edit_messages_') or c.data.startswith('userbot_edit_messages_'),
                                        state='*')
 
+    dp.register_callback_query_handler(h_admin.set_delay_menu,
+                                       lambda c: c.data.startswith('set_delay_'))
+    dp.register_callback_query_handler(h_admin.set_delay,
+                                       lambda c: c.data.startswith('delay_'))
+    dp.register_message_handler(h_admin.set_delay_get_message,
+                                state=[AppStates.STATE_GET_DELAY])
+
     dp.register_message_handler(h_admin.my_channels, Text('Мои каналы'), state='*')
 
     dp.register_callback_query_handler(h_admin.del_account,

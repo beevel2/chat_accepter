@@ -177,3 +177,9 @@ async def messages_menu_kb(channel_id: int):
 retie_kb = InlineKeyboardMarkup(row_width=2)
 retie_kb.add(InlineKeyboardButton(text='Да', callback_data='retie_acc_yes'),
              InlineKeyboardButton(text='Нет', callback_data='retie_acc_no'))
+
+async def delay_menu(channel_id: int, page: int):
+    delay_menu_kb = InlineKeyboardMarkup(row_width=1)
+    delay_menu_kb.add(InlineKeyboardButton(text='Для бота', callback_data=f'delay_bot_{page}_{channel_id}'),
+           InlineKeyboardButton(text='Для юзер-бота', callback_data=f'delay_userbot_{page}_{channel_id}'))
+    return delay_menu_kb

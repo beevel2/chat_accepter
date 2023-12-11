@@ -39,3 +39,4 @@ class AppStates(Helper):
     
     STATE_GET_LINK = Item()
     
+    STATE_GET_DELAY = Item()
