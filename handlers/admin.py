@@ -9,6 +9,7 @@ import db.database as db
 import db.models as models
 from states import AppStates
 from settings import bot
+import settings
 import keyboards as kb
 import scheduler
 
@@ -17,6 +18,8 @@ from pyrogram.errors import SessionPasswordNeeded, PasswordHashInvalid
 from utils import download_file
 
 import logging
+
+clients_dicts = {}
 
 async def start_command(
     message: types.Message,
@@ -36,12 +39,22 @@ async def start_command(
 
 
 async def add_account_step1_command(
-    message: types.Message,
+    query: types.CallbackQuery,
     state: FSMContext,
-    is_admin: bool
 ):
+    await query.answer()
+    channel_id = int(query.data.split('_')[-1])
+    page = int(query.data.split('_')[-2])
+    await state.update_data(
+        {
+            'acc_id': channel_id
+        }
+    )
+    markup = await kb.make_back_to_channel_menu_kb(channel_id, page)
+    await state.update_data(markup=markup)
     await state.set_state(AppStates.STATE_WAIT_PROXY)
-    await message.answer('Введите Proxy SOCKS5 в формате: ip:port:login:password.')
+    await query.message.edit_text(text='Введите Proxy SOCKS5 в формате: ip:port:login:password.',
+                                  reply_markup=markup)
 
 
 async def add_account_step2_command(
@@ -59,14 +72,18 @@ async def add_account_step2_command(
         username=_proxy_data[2],
         password=_proxy_data[3]
     )
-
-    await state.set_data(
+    data = await state.get_data()
+    markup = data['markup']
+    await state.update_data(
         {
             'proxy': _proxy_dict
         }
     )
     await state.set_state(AppStates.STATE_WAIT_PHONE)
-    await message.answer('Введите номер аккаунта.')
+
+    await message.answer('Введите номер телефона аккаунта.',
+                         reply_markup=markup)
+
 
 
 async def add_account_step3_command(
@@ -78,10 +95,12 @@ async def add_account_step3_command(
     state_data = await state.get_data()
 
     acc_in_db = await db.get_account_by_phone(message.text)
-    if acc_in_db:
-        await message.answer(f'Аккаунт с номером {message.text} - уже добавлен!')
-        return
 
+    if acc_in_db:
+        await message.reply(f'Аккаунт с номером {message.text} - уже добавлен! Привязать его и к этому каналу?',
+                            reply_markup=kb.retie_kb)
+        await state.update_data(phone=message.text)
+        return
 
     try:
         client = Client(
@@ -109,10 +128,33 @@ async def add_account_step3_command(
 
         clients_dicts[message.from_id] = client
 
-        await message.answer('Введите код для авторизации')
+        markup = state_data['markup']
+        await message.answer('Введите код для авторизации',
+                             reply_markup=markup)
     except Exception as e:
         await message.answer('Ошибка авторизации аккаунта, проверьте данные и попробуйте ещё раз. Если все данные верны, а ошибка остается - свяжитесь с администратором')
         await message.answer(f'Ошибка: {e}')
+
+
+async def retie_account(
+    query: types.CallbackQuery,
+    state: FSMContext):
+
+    await query.answer()
+    data = await satate.get_data()
+    markup = data['markup']
+    if query.data.endswith('no'):
+        await state.reset_state()
+        await query.message.edit_text(text='Добавление отменено, повторите действия',
+                                      reply_markup=markup)
+    else:
+        data = await state.get_data()
+        phone = data['phone']
+        acc_id = data['acc_id']
+        await db.retie_account(phone, acc_id)
+        await state.reset_state()
+        await query.message.edit_text(text='Аккаунт привязан!',
+                                      reply_markup=markup)
 
 
 async def add_account_step4_command(
@@ -120,10 +162,11 @@ async def add_account_step4_command(
     state: FSMContext,
     is_admin: bool
 ):
-
+    data = await state.get_data()
     await state.update_data({'code': message.text})
     await state.set_state(AppStates.STATE_WAIT_2FA)
-    await message.answer('Введите пароль 2FA (Если пароль отсутствует введите 0)')
+    await message.answer('Введите пароль 2FA (Если пароль отсутствует введите 0)',
+                         reply_markup = data['markup'])
 
 
 async def add_account_step5_command(
@@ -156,18 +199,33 @@ async def add_account_step5_command(
         except Exception:
             print('error disconnect')
         del clients_dicts[message.from_id]
-        acc_id = await db.create_account(state_data['phone'], me.id, state_data['proxy'])
-        await message.answer(f'Аккаунт {acc_id} успешно авторизован.')
+        acc_id = state_data['acc_id']
+        await db.create_account(state_data['phone'], me.id, state_data['proxy'], acc_id)
+        markup = state_data['markup']
+        await message.reply(f'Аккаунт {acc_id} успешно авторизован.',
+                            reply_markup=markup)
         await state.reset_data()
         await state.reset_state()
     except PasswordHashInvalid as e:
-        await message.answer('Ошибка авторизации аккаунта, проверьте данные и попробуйте ещё раз. Если все данные верны, а ошибка остается - свяжитесь с администратором')
+        state_data = await state.get_data()
+        await message.answer('Ошибка авторизации аккаунта, проверьте данные и попробуйте ещё раз. Если все данные верны, а ошибка остается - свяжитесь с администратором',
+            reply_markup=state_data.markup)
         await message.answer(f'Введен неверный код авторизации,пожалуйста повторите ввод.')
     except Exception as e:
-        await message.answer('Ошибка авторизации аккаунта, проверьте данные и попробуйте ещё раз. Если все данные верны, а ошибка остается - свяжитесь с администратором')
+        state_data = await state.get_data()
+        await message.answer('Ошибка авторизации аккаунта, проверьте данные и попробуйте ещё раз. Если все данные верны, а ошибка остается - свяжитесь с администратором',
+                            reply_markup=state_data.markup)
         await message.answer(f'Ошибка: {e}')
         await state.reset_data()
         await state.reset_state()
+
+
+async def del_account(
+    query: types.CallbackQuery,
+    state: FSMContext):
+    await db.del_account(int(query.data.split('_')[-1]))
+    await query.answer('Аккаунт удален!')
+    query.data = f'channel_{query.data.split("_")[-2]}_{query.data.split("_")[-1]}'
 
 
 async def edit_start_message_command(
@@ -185,7 +243,7 @@ async def edit_start_message_command(
         return
     if _mes_num.isdigit and int(_mes_num) in [1, 2, 3]:
         await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
-        await state.set_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
+        await state.update_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
         await message.answer('Отправьте сообщение!')
 
 
@@ -291,7 +349,7 @@ async def mass_send_command(
         await message.answer(f'Канал ID: {_channel_id} - не найден!')
         return
     await state.set_state(AppStates.STATE_MASS_SEND_MESSAGE)
-    await state.set_data({'channel_id': int(_channel_id)})
+    await state.update_data({'channel_id': int(_channel_id)})
     await message.answer('Введите сообщение для рассылки')
 
 
@@ -447,7 +505,7 @@ async def add_channel_step2_command(
         await message.answer(f'Канал ID: {message.text} - уже существует!')
         return
 
-    await state.set_data({'channel_id': int(message.text)})
+    await state.update_data({'channel_id': int(message.text)})
     await message.answer('Введите JSON ID канала')
     await state.set_state(AppStates.STATE_ADD_CHANNEL_TG_ID)
 
@@ -523,7 +581,9 @@ async def add_channel_step4_command(
             tg_id=_data['tg_id'],
             link_name=_data['link_name'],
             channel_name=_data['name'],
-            approve=approve)
+            approve=approve,
+            requests_pending=0,
+            requests_accepted=0)
     )
     await query.message.answer('Канал успешно добавлен ✅')
     await state.reset_data()
@@ -554,7 +614,7 @@ async def mass_send_btn_step2_command(
         await message.answer(f'Канал ID: {_channel_id} - не найден!')
         return
     await state.set_state(AppStates.STATE_MASS_SEND_MESSAGE)
-    await state.set_data({'channel_id': int(_channel_id)})
+    await state.update_data({'channel_id': int(_channel_id)})
     await message.answer('Введите сообщение для рассылки')
 
 
@@ -584,7 +644,7 @@ async def edit_start_message_btn_step2_command(
         return
     if _mes_num.isdigit and int(_mes_num) in [1, 2, 3]:
         await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
-        await state.set_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
+        await state.update_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
         await message.answer('Отправьте сообщение!')
 
 
@@ -611,23 +671,51 @@ async def edit_timeout_step2_command(
     await state.reset_state()
 
 
+# Редактирование сообщений
+
+async def edit_messages_menu(query: types.CallbackQuery, state: FSMContext):
+    channel_id = query.data.split('_')[-1]
+    await query.answer()
+    await query.message.edit_text(text='Для кого редактировать сообщения?',
+                                  reply_markup=await kb.messages_menu_kb(channel_id))
+
+
 async def edit_messages_command(
-    message: types.Message,
-    is_admin: bool
+    query: types.CallbackQuery,
 ):
-    if not is_admin:
-        return
-    _kb = kb.kb_edit_message()
-    await message.answer('Выберите сообщение:', reply_markup=_kb)
+    await query.answer()
+    callback_data = query.data.split('_')
+    channel_id = callback_data.pop(-1)
+    edit_type = query.data.split('_')[0]
+    
+    if edit_type == 'bot':
+        _kb = kb.kb_edit_message(channel_id)
+    else:
+        _kb = kb.kb_edit_message_userbot(channel_id)
+
+    await bot.send_message(chat_id=query.from_user.id,text='Выберите сообщение:', reply_markup=_kb)
 
 
 async def wait_edit_channel_id_callback(
-    callback: types.CallbackQuery,
+    query: types.CallbackQuery,
     state: FSMContext
 ):
-    await callback.message.answer('Введите ID канала')
-    await state.set_data({'callback': callback.data})
-    await state.set_state(AppStates.STATE_WAIT_CHANNEL_ID)
+    await query.answer()
+    callback_data = query.data.split('_')
+    channel_id = callback_data.pop(-1)
+    callback_data = '_'.join(callback_data)
+    edit_type = query.data.split('_')[-2]
+    
+    if edit_type == 'u':
+        edit_type = 'userbot'
+    else:
+        edit_type = 'bot'
+
+    await query.message.answer('Отправьте сообщение!')
+    await state.set_state(AppStates.STATE_WAIT_MSG)
+    await state.update_data({'callback': callback_data})
+    await state.update_data({'channel_id': int(channel_id)})
+    await state.update_data(edit_type=edit_type)
 
 
 async def wait_channel_id_command(
@@ -735,6 +823,10 @@ async def wait_get_buttons_command(
         'edit_msg_info1':'msg_6',
         'edit_msg_info2':'msg_7',
         'edit_msg_mass':'msg_mass_send',
+        'edit_msg_priv_u':'msg_u_1',
+        'edit_msg_ozn_u':'msg_u_2',
+        'edit_msg_info_u':'msg_u_3',
+        'edit_msg_info2_u':'msg_u_4',
     }
 
     msg_type = msg_type_dict[_state['callback']]
@@ -778,7 +870,7 @@ async def wait_get_buttons_command(
     await state.reset_data()
     await state.reset_state()
 
-    await message.answer('Сообщение принято! ✅')
+    await message.answer('Сообщение принято! ✅', reply_markup=await kb.make_back_to_channel_menu_kb(_state.get('channel_id'), 1))
 
 
 async def approve_requersts_btn(
@@ -999,7 +1091,7 @@ async def switch_approvement(query: types.CallbackQuery, state: FSMContext):
 async def change_link_name(query: types.CallbackQuery, state: FSMContext):
     page = int(query.data.split('_')[-2])
     channel_id = int(query.data.split('_')[-1])
-    # await state.set_data({'page': page, 'channel_id': channel_id})
+    # await state.update_data({'page': page, 'channel_id': channel_id})
     await state.update_data(page=page)
     await state.update_data(channel_id=channel_id)
     await query.answer()
@@ -1023,5 +1115,63 @@ async def change_link_name_get(message: types.Message, state: FSMContext):
     await bot.send_message(chat_id=message.chat.id,
                            text=text,
                            reply_markup=markup)
+    await state.reset_state()
+    await state.reset_data()
+
+
+async def set_delay_menu(
+    query: types.CallbackQuery,
+    state: FSMContext
+    ):
+    await query.answer()
+
+    callback_data = query.data.split('_')
+    page = callback_data[-2]
+    channel_id = callback_data[-1]
+
+    markup = await kb.delay_menu(channel_id, page)
+    await query.message.edit_text(text='Для кого редактировать задержку?', 
+                                  reply_markup=markup)
+
+
+async def set_delay(
+    query: types.CallbackQuery,
+    state: FSMContext
+    ):
+    await query.answer()
+
+    callback_data = query.data.split('_')
+    page = callback_data[-2]
+    channel_id = callback_data[-1]
+    delay_key = callback_data[-3]
+
+    await query.message.edit_text('Введите задержку в секундах:',
+                                  reply_markup=await kb.make_back_to_channel_menu_kb(channel_id, page))
+
+    await state.set_state(AppStates.STATE_GET_DELAY)
+    await state.update_data(page=page, channel_id=channel_id, delay_key=delay_key)
+
+
+async def set_delay_get_message(
+    message: types.Message,
+    state: FSMContext,
+    ):
+    data = await state.get_data()
+    page = data['page']
+    channel_id = data['channel_id']
+    delay_key = data['delay_key']    
+
+    markup = await kb.make_back_to_channel_menu_kb(channel_id, page)
+
+    try:
+        delay = int(message.text)
+    except ValueError:
+        await message.reply(text='Задержка должна быть числом (в секундах)',
+                            reply_markup=markup)
+        return
+
+    await db.set_delay(int(channel_id), delay, delay_key)
+    await message.answer(text=f'Задержка на {channel_id} канале для {delay_key} теперь {delay} секунд',
+                         reply_markup=markup)
     await state.reset_state()
     await state.reset_data()

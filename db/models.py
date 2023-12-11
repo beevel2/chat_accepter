@@ -35,4 +35,11 @@ class ChannelModel(BaseModel):
     msg_6: Optional[str] = None
     msg_7: Optional[str] = None
     msg_mass_send: Optional[str] = None
+    msg_u_1: Optional[str] = None
+    msg_u_2: Optional[str] = None
+    msg_u_3: Optional[str] = None
+    msg_u_4: Optional[str] = None
+    bot_delay: int = 60
+    userbot_delay: int = 0
+
 

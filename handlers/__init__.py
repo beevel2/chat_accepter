@@ -16,23 +16,22 @@ def setup_handlers(dp: Dispatcher):
 
     dp.register_message_handler(h_admin.cancel, Text('Отмена'))
 
-    dp.register_message_handler(h_admin.add_account_step1_command, Text('Подключить аккаунт'))
+    dp.register_callback_query_handler(h_admin.add_account_step1_command,
+                                lambda c: c.data.startswith('tie_account_'))
     dp.register_message_handler(h_admin.add_account_step2_command, state=[AppStates.STATE_WAIT_PROXY], regexp=r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+:[^:]+:[^:]+")
     dp.register_message_handler(h_admin.add_account_step3_command, state=[AppStates.STATE_WAIT_PHONE], regexp=r"\d+")
+    dp.register_callback_query_handler(h_admin.retie_account, 
+                                       lambda c: c.data.startswith('retie_acc_'),
+                                       state=[AppStates.STATE_WAIT_PHONE])
     dp.register_message_handler(h_admin.add_account_step4_command, state=[AppStates.STATE_WAIT_AUTH_CODE])
     dp.register_message_handler(h_admin.add_account_step5_command, state=[AppStates.STATE_WAIT_2FA])
 
-    dp.register_message_handler(h_admin.edit_start_message_btn_command, Text('Изменить сообщение'))
     dp.register_message_handler(h_admin.edit_start_message_btn_step2_command, state=[AppStates.STATE_EDIT_MESSAGE_BTN], regexp=r"\d+\s\d")
 
-    dp.register_message_handler(h_admin.edit_start_message_command, Text(startswith='/edit_message_'), content_types=['any'])
-
-
-    dp.register_message_handler(h_admin.approvement_settings, Text('Приём заявок'))
     dp.register_message_handler(h_admin.approvement_settings_get_id, content_types='text', state=[AppStates.STATE_APPROVEMENT_SETTINGS])
     dp.register_callback_query_handler(h_admin.approvement_settings_query, lambda c: c.data.startswith('approve'), state=[AppStates.STATE_APPROVEMENT_SETTINGS])
 
-    dp.register_message_handler(h_admin.approve_requersts_btn, Text('Одобрить заявки'))
+    # dp.register_message_handler(h_admin.approve_requersts_btn, Text('Одобрить заявки'))
     dp.register_message_handler(h_admin.approve_requests_get_id, content_types='text', state=[AppStates.STATE_APPROVE_REQUERSTS])
 
 
@@ -55,12 +54,28 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(h_admin.add_channel_get_name, state=[AppStates.STATE_ADD_CHANNEL_NAME])
     dp.register_callback_query_handler(h_admin.add_channel_step4_command, lambda c: c.data.startswith('approve_'), state=[AppStates.STATE_ADD_CHANNEL_APPROVE])
 
-    dp.register_message_handler(h_admin.edit_timeout_command, Text('Изменить таймаут отправки сообщения'))
-    dp.register_message_handler(h_admin.edit_timeout_step2_command, state=[AppStates.STATE_CHANGE_TIMEOUT_BTN], regexp=r"\d+")
+    # dp.register_message_handler(h_admin.edit_timeout_command, Text('Изменить таймаут отправки сообщения'))
+    # dp.register_message_handler(h_admin.edit_timeout_step2_command, state=[AppStates.STATE_CHANGE_TIMEOUT_BTN], regexp=r"\d+")
 
-    dp.register_message_handler(h_admin.edit_messages_command, Text('Редактировать сообщения'))
+
+    dp.register_callback_query_handler(h_admin.edit_messages_menu,
+                                       lambda c: c.data.startswith('edit_messages_'))
+
+    dp.register_callback_query_handler(h_admin.edit_messages_command,
+                                       lambda c: c.data.startswith('bot_edit_messages_') or c.data.startswith('userbot_edit_messages_'),
+                                       state='*')
+
+    dp.register_callback_query_handler(h_admin.set_delay_menu,
+                                       lambda c: c.data.startswith('set_delay_'))
+    dp.register_callback_query_handler(h_admin.set_delay,
+                                       lambda c: c.data.startswith('delay_'))
+    dp.register_message_handler(h_admin.set_delay_get_message,
+                                state=[AppStates.STATE_GET_DELAY])
 
     dp.register_message_handler(h_admin.my_channels, Text('Мои каналы'), state='*')
+
+    dp.register_callback_query_handler(h_admin.del_account,
+                                       lambda c: c.data.startswith('delete_account_'))
 
     dp.register_callback_query_handler(
         h_admin.change_link_name, 
