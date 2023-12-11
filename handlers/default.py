@@ -150,7 +150,7 @@ async def send_userbot_messages(user_id: int, channel, name):
         if channel.get('userbot_delay'):
             delay = channel['userbot_delay']
         else:
-            delay = 60
+            delay = 0
         await asyncio.sleep(delay)
 
         requests = app.get_chat_join_requests(channel['tg_id'])
