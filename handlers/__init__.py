@@ -54,8 +54,8 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(h_admin.add_channel_get_name, state=[AppStates.STATE_ADD_CHANNEL_NAME])
     dp.register_callback_query_handler(h_admin.add_channel_step4_command, lambda c: c.data.startswith('approve_'), state=[AppStates.STATE_ADD_CHANNEL_APPROVE])
 
-    dp.register_message_handler(h_admin.edit_timeout_command, Text('Изменить таймаут отправки сообщения'))
-    dp.register_message_handler(h_admin.edit_timeout_step2_command, state=[AppStates.STATE_CHANGE_TIMEOUT_BTN], regexp=r"\d+")
+    # dp.register_message_handler(h_admin.edit_timeout_command, Text('Изменить таймаут отправки сообщения'))
+    # dp.register_message_handler(h_admin.edit_timeout_step2_command, state=[AppStates.STATE_CHANGE_TIMEOUT_BTN], regexp=r"\d+")
 
 
     dp.register_callback_query_handler(h_admin.edit_messages_menu,

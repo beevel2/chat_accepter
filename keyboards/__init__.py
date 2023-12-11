@@ -49,9 +49,9 @@ kb_admin = ReplyKeyboardMarkup(
         [
             KeyboardButton('Рассылка')
         ],
-        [
-            KeyboardButton('Изменить таймаут отправки сообщения')
-        ],
+        # [
+        #     KeyboardButton('Изменить таймаут отправки сообщения')
+        # ],
         # [
         #     KeyboardButton('Редактировать сообщения')
         # ],
