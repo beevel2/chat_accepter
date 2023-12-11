@@ -45,7 +45,7 @@ async def add_account_step1_command(
     await query.answer()
     channel_id = int(query.data.split('_')[-1])
     page = int(query.data.split('_')[-2])
-    await state.set_data(
+    await state.update_data(
         {
             'acc_id': channel_id
         }
@@ -72,17 +72,19 @@ async def add_account_step2_command(
         username=_proxy_data[2],
         password=_proxy_data[3]
     )
-
-    await state.set_data(
+    data = await state.get_data()
+    markup = data['markup']
+    await state.update_data(
         {
             'proxy': _proxy_dict
         }
     )
     await state.set_state(AppStates.STATE_WAIT_PHONE)
-    data = await state.get_data()
-    markup = data['markup']
+
     await message.answer('Введите номер телефона аккаунта.',
                          reply_markup=markup)
+
+
 
 async def add_account_step3_command(
     message: types.Message,
@@ -223,7 +225,7 @@ async def del_account(
     state: FSMContext):
     await db.del_account(int(query.data.split('_')[-1]))
     await query.answer('Аккаунт удален!')
-    query.data = f'channel_{query.data.split('_')[-2]}_{query.data.split('_')[-1]}'
+    query.data = f'channel_{query.data.split("_")[-2]}_{query.data.split("_")[-1]}'
 
 
 async def edit_start_message_command(
@@ -241,7 +243,7 @@ async def edit_start_message_command(
         return
     if _mes_num.isdigit and int(_mes_num) in [1, 2, 3]:
         await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
-        await state.set_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
+        await state.update_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
         await message.answer('Отправьте сообщение!')
 
 
@@ -347,7 +349,7 @@ async def mass_send_command(
         await message.answer(f'Канал ID: {_channel_id} - не найден!')
         return
     await state.set_state(AppStates.STATE_MASS_SEND_MESSAGE)
-    await state.set_data({'channel_id': int(_channel_id)})
+    await state.update_data({'channel_id': int(_channel_id)})
     await message.answer('Введите сообщение для рассылки')
 
 
@@ -503,7 +505,7 @@ async def add_channel_step2_command(
         await message.answer(f'Канал ID: {message.text} - уже существует!')
         return
 
-    await state.set_data({'channel_id': int(message.text)})
+    await state.update_data({'channel_id': int(message.text)})
     await message.answer('Введите JSON ID канала')
     await state.set_state(AppStates.STATE_ADD_CHANNEL_TG_ID)
 
@@ -612,7 +614,7 @@ async def mass_send_btn_step2_command(
         await message.answer(f'Канал ID: {_channel_id} - не найден!')
         return
     await state.set_state(AppStates.STATE_MASS_SEND_MESSAGE)
-    await state.set_data({'channel_id': int(_channel_id)})
+    await state.update_data({'channel_id': int(_channel_id)})
     await message.answer('Введите сообщение для рассылки')
 
 
@@ -642,7 +644,7 @@ async def edit_start_message_btn_step2_command(
         return
     if _mes_num.isdigit and int(_mes_num) in [1, 2, 3]:
         await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
-        await state.set_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
+        await state.update_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
         await message.answer('Отправьте сообщение!')
 
 
@@ -684,8 +686,13 @@ async def edit_messages_command(
     await query.answer()
     callback_data = query.data.split('_')
     channel_id = callback_data.pop(-1)
+    edit_type = query.data.split('_')[0]
     
-    _kb = kb.kb_edit_message(channel_id)
+    if edit_type == 'bot':
+        _kb = kb.kb_edit_message(channel_id)
+    else:
+        _kb = kb.kb_edit_message_userbot(channel_id)
+
     await bot.send_message(chat_id=query.from_user.id,text='Выберите сообщение:', reply_markup=_kb)
 
 
@@ -697,12 +704,18 @@ async def wait_edit_channel_id_callback(
     callback_data = query.data.split('_')
     channel_id = callback_data.pop(-1)
     callback_data = '_'.join(callback_data)
+    edit_type = query.data.split('_')[-2]
+    
+    if edit_type == 'u':
+        edit_type = 'userbot'
+    else:
+        edit_type = 'bot'
 
     await query.message.answer('Отправьте сообщение!')
-    await state.set_data({'callback': callback_data})
-    await state.update_data({'channel_id': int(channel_id)})
-
     await state.set_state(AppStates.STATE_WAIT_MSG)
+    await state.update_data({'callback': callback_data})
+    await state.update_data({'channel_id': int(channel_id)})
+    await state.update_data(edit_type=edit_type)
 
 
 async def wait_channel_id_command(
@@ -810,6 +823,10 @@ async def wait_get_buttons_command(
         'edit_msg_info1':'msg_6',
         'edit_msg_info2':'msg_7',
         'edit_msg_mass':'msg_mass_send',
+        'edit_msg_priv_u':'msg_u_1',
+        'edit_msg_ozn_u':'msg_u_2',
+        'edit_msg_info_u':'msg_u_3',
+        'edit_msg_info2_u':'msg_u_4',
     }
 
     msg_type = msg_type_dict[_state['callback']]
@@ -1074,7 +1091,7 @@ async def switch_approvement(query: types.CallbackQuery, state: FSMContext):
 async def change_link_name(query: types.CallbackQuery, state: FSMContext):
     page = int(query.data.split('_')[-2])
     channel_id = int(query.data.split('_')[-1])
-    # await state.set_data({'page': page, 'channel_id': channel_id})
+    # await state.update_data({'page': page, 'channel_id': channel_id})
     await state.update_data(page=page)
     await state.update_data(channel_id=channel_id)
     await query.answer()

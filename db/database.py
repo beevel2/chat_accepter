@@ -157,7 +157,7 @@ async def get_account_by_phone(phone):
     return await col.find_one({'phone': phone})
 
 
-async def create_account(phone: str, tg_id: int, proxy: dict, acc_id:int,start_work:str="00:00", end_work:str="23:59", cooldown=20, deferred_tasks=0) -> int:
+async def create_account(phone: str, tg_id: int, proxy: dict, acc_id:int) -> int:
     col = db_connection[COLLECTION_ACCOUNTS]
     await col.insert_one(
         {
@@ -165,11 +165,6 @@ async def create_account(phone: str, tg_id: int, proxy: dict, acc_id:int,start_w
             'tg_id': tg_id,
             'phone': phone,
             'proxy': proxy,
-            'start_work': start_work,
-            'end_work': end_work,
-            'cooldown': cooldown,
-            'deferred_tasks': deferred_tasks,
-            'users': []
         }
     )
     return acc_id
@@ -226,7 +221,7 @@ async def change_link_name(channel_id: int, link_name: str):
 
 async def fetch_account_by_id(acc_id: int):
     col = db_connection[COLLECTION_ACCOUNTS]
-    account = await col.find_one(filter={'acc_id': acc_id})
+    account = await col.find_one(filter={'account_id': acc_id})
 
     return account
 
@@ -234,11 +229,11 @@ async def fetch_account_by_id(acc_id: int):
 async def retie_account(phone: str, acc_id):
     col = db_connection[COLLECTION_ACCOUNTS]
     account = await get_account_by_phone(phone)
-    account['acc_id'] = acc_id
+    account['account_id'] = acc_id
     await col.insert_one(account)
 
 
 async def del_account(acc_id: int):
     col = db_connection[COLLECTION_ACCOUNTS]
-    await col.delete_one({'acc_id': acc_id})
+    await col.delete_one({'account_id': acc_id})
 

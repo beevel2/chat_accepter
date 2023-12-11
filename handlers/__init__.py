@@ -26,13 +26,8 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(h_admin.add_account_step4_command, state=[AppStates.STATE_WAIT_AUTH_CODE])
     dp.register_message_handler(h_admin.add_account_step5_command, state=[AppStates.STATE_WAIT_2FA])
 
-    # dp.register_message_handler(h_admin.edit_start_message_btn_command, Text('Изменить сообщение'))
     dp.register_message_handler(h_admin.edit_start_message_btn_step2_command, state=[AppStates.STATE_EDIT_MESSAGE_BTN], regexp=r"\d+\s\d")
 
-    # dp.register_message_handler(h_admin.edit_start_message_command, Text(startswith='/edit_message_'), content_types=['any'])
-
-
-    # dp.register_message_handler(h_admin.approvement_settings, Text('Приём заявок'))
     dp.register_message_handler(h_admin.approvement_settings_get_id, content_types='text', state=[AppStates.STATE_APPROVEMENT_SETTINGS])
     dp.register_callback_query_handler(h_admin.approvement_settings_query, lambda c: c.data.startswith('approve'), state=[AppStates.STATE_APPROVEMENT_SETTINGS])
 
@@ -67,7 +62,7 @@ def setup_handlers(dp: Dispatcher):
                                        lambda c: c.data.startswith('edit_messages_'))
 
     dp.register_callback_query_handler(h_admin.edit_messages_command,
-                                       lambda c: c.data.startswith('bot_edit_messages_'),
+                                       lambda c: c.data.startswith('bot_edit_messages_') or c.data.startswith('userbot_edit_messages_'),
                                        state='*')
 
     dp.register_message_handler(h_admin.my_channels, Text('Мои каналы'), state='*')

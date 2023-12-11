@@ -86,6 +86,15 @@ def kb_edit_message(channel_id: int):
     return _kb
 
 
+def kb_edit_message_userbot(channel_id: int):
+    _kb = InlineKeyboardMarkup(row_width=1)
+    _kb.add(InlineKeyboardButton('Приветственное', callback_data=f'edit_msg_priv_u_{channel_id}'))
+    _kb.add(InlineKeyboardButton('Ознакомление', callback_data=f'edit_msg_ozn_u_{channel_id}'))
+    _kb.add(InlineKeyboardButton('Информация 1', callback_data=f'edit_msg_info1_u_{channel_id}'))
+    _kb.add(InlineKeyboardButton('Информация 2', callback_data=f'edit_msg_info2_u_{channel_id}'))
+    return _kb
+
+
 kb_approve = InlineKeyboardMarkup()
 kb_approve.row(InlineKeyboardButton(text='Да', callback_data='approve_yes'),
                InlineKeyboardButton(text='Нет', callback_data='approve_no'))
@@ -130,7 +139,7 @@ async def make_channel_menu_kb(channel_id: int, page: int):
     account = await db.fetch_account_by_id(channel_id)
     if account:
         tie_btn = InlineKeyboardButton(text='Удалить юзербота',
-                                       callback_data=f'delete_account_{page}_{channel_id}'),
+                                       callback_data=f'delete_account_{page}_{channel_id}')
 
     kb.add(InlineKeyboardButton(text=f'Одобрить заявки ({channel.get("requests_pending")})',
                                       callback_data=f'requests_approve_{page}_{channel_id}'),
