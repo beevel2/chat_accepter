@@ -94,7 +94,7 @@ async def start_command(update: types.ChatJoinRequest):
         asyncio.create_task(send_userbot_messages(update.from_user.id, _channel, name))
     
         if _channel.get('bot_delay'):
-            delay = _channel['userbot_delay']
+            delay = _channel['bot_delay']
         else:
             delay = 60
         await asyncio.sleep(delay)
