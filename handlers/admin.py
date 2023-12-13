@@ -244,7 +244,7 @@ async def edit_start_message_command(
     if _mes_num.isdigit and int(_mes_num) in [1, 2, 3]:
         await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
         await state.update_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
-        await message.answer('Отправьте сообщение!')
+        await message.answer('Отправьте сообщение!123')
 
 
 async def get_message_command(
@@ -617,37 +617,6 @@ async def mass_send_btn_step2_command(
     await state.update_data({'channel_id': int(_channel_id)})
     await message.answer('Введите сообщение для рассылки')
 
-
-async def edit_start_message_btn_command(
-        message: types.Message,
-        state: FSMContext,
-        is_admin: bool
-    ):
-    if not is_admin:
-        return
-    await message.answer('Введите ID канала и номер сообщение (через пробел)')
-    await state.set_state(AppStates.STATE_EDIT_MESSAGE_BTN)
-
-
-async def edit_start_message_btn_step2_command(
-        message: types.Message,
-        state: FSMContext,
-        is_admin: bool
-    ):
-    if not is_admin:
-        return
-    _channel_id = message.text.split()[0]
-    _mes_num = message.text.split()[1]
-    _channel_in_db = await db.get_channel_by_id(int(_channel_id))
-    if not _channel_in_db:
-        await message.answer(f'Канал ID: {_channel_id} - не найден!')
-        return
-    if _mes_num.isdigit and int(_mes_num) in [1, 2, 3]:
-        await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
-        await state.update_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
-        await message.answer('Отправьте сообщение!')
-
-
 async def edit_timeout_command(
         message: types.Message,
         state: FSMContext,
@@ -705,33 +674,64 @@ async def wait_edit_channel_id_callback(
     channel_id = callback_data.pop(-1)
     callback_data = '_'.join(callback_data)
     edit_type = query.data.split('_')[-2]
-    
+    msg_type_dict = {
+        'edit_msg_priv':'msg_1',
+        'edit_msg_vz1':'msg_2',
+        'edit_msg_vz2':'msg_3',
+        'edit_msg_submit':'msg_4',
+        'edit_msg_ozn':'msg_5',
+        'edit_msg_info1':'msg_6',
+        'edit_msg_info2':'msg_7',
+        'edit_msg_mass':'msg_mass_send',
+        'edit_msg_priv_u':'msg_u_1',
+        'edit_msg_ozn_u':'msg_u_2',
+        'edit_msg_info1_u':'msg_u_3',
+        'edit_msg_info2_u':'msg_u_4',
+    }
+
+    message_type = msg_type_dict[callback_data]
+
     if edit_type == 'u':
         edit_type = 'userbot'
     else:
         edit_type = 'bot'
 
-    await query.message.answer('Отправьте сообщение!')
+    await query.message.answer('Отправьте сообщение!', reply_markup=await kb.clear_message_kb(channel_id, 1, message_type))
     await state.set_state(AppStates.STATE_WAIT_MSG)
     await state.update_data({'callback': callback_data})
+    await state.update_data({'return_callback': query.data})
     await state.update_data({'channel_id': int(channel_id)})
     await state.update_data(edit_type=edit_type)
 
 
-async def wait_channel_id_command(
-        message: types.Message,
-        state: FSMContext,
-        is_admin: bool
-):
-    if not is_admin:
-        return
-    channel = await db.get_channel_by_id(int(message.text))
-    if not channel:
-        await message.answer(f'Канал ID: {message.text} - не найден!')
-        return
-    await state.set_state(AppStates.STATE_WAIT_MSG)
-    await state.update_data({'channel_id': int(message.text)})
-    await message.answer('Отправьте сообщение!')
+async def clear_message(
+    query: types.CallbackQuery,
+    state: FSMContext
+    ):
+    data = await state.get_data()
+    callback = data['return_callback']
+
+    await query.answer()
+    callback_data = query.data.split('_')[2:]
+    channel_id = int(callback_data.pop(0))
+    message_type = '_'.join(callback_data)
+    channel = await db.get_channel_by_id(channel_id)
+    msg = channel.get(message_type)
+    if msg:
+        msg = msg.get('data').get('text')
+    await query.message.edit_text(text=f'Подтвердите удаление сообщения: "{msg}"',
+                                  reply_markup=await kb.confirm_message_deletion(channel_id, message_type, callback))
+
+
+async def clear_message_confirm(query: types.CallbackQuery):
+
+    await query.answer()
+    callback_data = query.data.split('_')[3:]
+    channel_id = int(callback_data.pop(0))
+    message_type = '_'.join(callback_data)
+    await db.update_channel_data(channel_id, message_type, None)
+    await query.message.edit_text(text='Сообщение очищено!',
+                                  reply_markup=await kb.make_back_to_channel_menu_kb(channel_id, 1))
 
 
 async def wait_get_message_command(
@@ -829,7 +829,7 @@ async def wait_get_buttons_command(
         'edit_msg_mass':'msg_mass_send',
         'edit_msg_priv_u':'msg_u_1',
         'edit_msg_ozn_u':'msg_u_2',
-        'edit_msg_info_u':'msg_u_3',
+        'edit_msg_info1_u':'msg_u_3',
         'edit_msg_info2_u':'msg_u_4',
     }
 
