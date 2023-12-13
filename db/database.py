@@ -113,6 +113,13 @@ async def update_channel_data(channel_id, field, data):
         {'channel_id': channel_id}, {'$set': {field: data}}
     )
 
+
+async def delete_channel(channel_id):
+    col = db_connection[COLLECTION_CHANNELS]
+    await col.delete_one({'channel_id': int(channel_id)})
+    await del_account(channel_id)
+
+
 async def update_timeout(timeout: int):
     col = db_connection[COLLECTION_SETTINGS]
     res = await col.find_one(filter={'settings': 'timeout'})

@@ -157,4 +157,13 @@ def setup_handlers(dp: Dispatcher):
         regexp=r"\d{1,2}:\d{1,2}"
     )
 
+    dp.register_callback_query_handler(
+        h_admin.delete_channel, 
+        lambda call: call.data.startswith('delete_channel_')
+    )
+    dp.register_callback_query_handler(
+        h_admin.delete_channel_confirm, 
+        lambda call: call.data.startswith('comfirm_channel_del_')
+    )
+
     dp.register_message_handler(h.user_send_message_command)

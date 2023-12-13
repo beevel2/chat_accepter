@@ -1031,7 +1031,10 @@ async def my_channels_page(
 
     markup, max_pages = await kb.make_my_channels_kb(1)
 
-    await query.answer()
+    try:
+        await query.answer()
+    except:
+        pass
     try:
         await query.message.edit_text(text=f'Список всех каналов стр. 1/{max_pages}:',
                                     reply_markup=markup)
@@ -1179,3 +1182,22 @@ async def set_delay_get_message(
                          reply_markup=markup)
     await state.reset_state()
     await state.reset_data()
+
+
+async def delete_channel(query: types.CallbackQuery):
+    await query.answer()
+    data = query.data.split('_')
+    channel_id = int(data[-1])
+    page = int(data[-2])
+    channel = await db.get_channel_by_id(channel_id)
+    await query.message.edit_text(text=f'Вы уверены в удалении канала \"{channel.get("channel_name")}\". Все данные об этом канале будут безвозвратно ',
+                                  reply_markup=await kb.confirm_channel_deletion(channel_id, page))
+
+async def delete_channel_confirm(query: types.CallbackQuery, state: FSMContext):
+    await query.answer('Канал удален')
+    data = query.data.split('_')
+    channel_id = int(data[-1])
+    page = int(data[-2])
+    await db.delete_channel(channel_id)
+    query.data = f'list_channel_page_{page}'
+    await my_channels_page(query, state)
