@@ -99,8 +99,10 @@ def setup_handlers(dp: Dispatcher):
 
     dp.register_callback_query_handler(h_admin.set_delay_menu,
                                        lambda c: c.data.startswith('set_delay_'))
-    dp.register_callback_query_handler(h_admin.set_delay,
+    dp.register_callback_query_handler(h_admin.set_delay_pick_message,
                                        lambda c: c.data.startswith('delay_'))
+    dp.register_callback_query_handler(h_admin.set_delay,
+                                       lambda c: c.data.startswith('edit-delay'))
     dp.register_message_handler(h_admin.set_delay_get_message,
                                 state=[AppStates.STATE_GET_DELAY])
 

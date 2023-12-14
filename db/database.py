@@ -144,7 +144,9 @@ async def update_channel_data(channel_id, field, data):
 async def delete_channel(channel_id):
     col = db_connection[COLLECTION_CHANNELS]
     await col.delete_one({'channel_id': int(channel_id)})
-    await del_account(channel_id)
+    await del_account(int(channel_id))
+    col = db_connection[COLLECTION_USER]
+    await col.delete_many({'channel_id': int(channel_id)})
 
 
 async def update_timeout(timeout: int):
@@ -272,14 +274,27 @@ async def del_account(acc_id: int):
     await col.delete_one({'account_id': acc_id})
 
 
-async def set_delay(channel_id: int, delay: int, delay_key: str):
+async def set_delay(channel_id: int, delay: int, enum: str):
     col = db_connection[COLLECTION_CHANNELS]
-    if delay_key == 'bot':
-        await col.find_one_and_update(
-            {'channel_id': channel_id}, {'$set': {'bot_delay': delay}}
-        )
-    else:
-        await col.find_one_and_update(
-            {'channel_id': channel_id}, {'$set': {'userbot_delay': delay}}
-        )
+    channel = await get_channel_by_id(channel_id)
+    message = channel.get(enum)
+    message['delay'] = delay
+    await col.find_one_and_update({'channel_id': channel_id}, {'$set': {enum: message}})
 
+
+async def get_messages_bot(channel_id: int):
+    channel = await get_channel_by_id(channel_id)
+    messages = {}
+    for i in range(1, 8):
+        if channel.get(f'msg_{i}'):
+            messages[f'msg_{i}'] = channel.get(f'msg_{i}')
+    return messages
+
+
+async def get_messages_userbot(channel_id: int):
+    channel = await get_channel_by_id(channel_id)
+    messages = {}
+    for i in range(1, 5):
+        if channel.get(f'msg_u_{i}'):
+            messages[f'msg_u_{i}'] = channel.get(f'msg_u_{i}')
+    return messages
