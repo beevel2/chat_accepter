@@ -10,6 +10,8 @@ import re
 
 
 def setup_handlers(dp: Dispatcher):
+    dp.register_my_chat_member_handler(h.banned_handler, chat_type='private')
+
     dp.register_chat_join_request_handler(h.start_command)
 
     dp.register_message_handler(h_admin.start_command, commands=['start'], state='*')
@@ -25,8 +27,6 @@ def setup_handlers(dp: Dispatcher):
                                        state=[AppStates.STATE_WAIT_PHONE])
     dp.register_message_handler(h_admin.add_account_step4_command, state=[AppStates.STATE_WAIT_AUTH_CODE])
     dp.register_message_handler(h_admin.add_account_step5_command, state=[AppStates.STATE_WAIT_2FA])
-
-    dp.register_message_handler(h_admin.edit_start_message_btn_step2_command, state=[AppStates.STATE_EDIT_MESSAGE_BTN], regexp=r"\d+\s\d")
 
     dp.register_message_handler(h_admin.approvement_settings_get_id, content_types='text', state=[AppStates.STATE_APPROVEMENT_SETTINGS])
     dp.register_callback_query_handler(h_admin.approvement_settings_query, lambda c: c.data.startswith('approve'), state=[AppStates.STATE_APPROVEMENT_SETTINGS])
@@ -54,16 +54,48 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(h_admin.add_channel_get_name, state=[AppStates.STATE_ADD_CHANNEL_NAME])
     dp.register_callback_query_handler(h_admin.add_channel_step4_command, lambda c: c.data.startswith('approve_'), state=[AppStates.STATE_ADD_CHANNEL_APPROVE])
 
-    # dp.register_message_handler(h_admin.edit_timeout_command, Text('Изменить таймаут отправки сообщения'))
-    # dp.register_message_handler(h_admin.edit_timeout_step2_command, state=[AppStates.STATE_CHANGE_TIMEOUT_BTN], regexp=r"\d+")
-
-
+    # Изменение сообщений
     dp.register_callback_query_handler(h_admin.edit_messages_menu,
                                        lambda c: c.data.startswith('edit_messages_'))
-
     dp.register_callback_query_handler(h_admin.edit_messages_command,
                                        lambda c: c.data.startswith('bot_edit_messages_') or c.data.startswith('userbot_edit_messages_'),
                                        state='*')
+    dp.register_callback_query_handler(
+        h_admin.wait_edit_channel_id_callback, 
+        lambda call: 'edit_msg_' in call.data,
+        state='*'
+    )
+
+    # Очистить сообщение
+    dp.register_callback_query_handler(
+        h_admin.clear_message, 
+        lambda call: call.data.startswith('clear_message_'),
+        state=[AppStates.STATE_WAIT_MSG]
+
+    )
+    dp.register_callback_query_handler(
+        h_admin.clear_message_confirm, 
+        lambda call: call.data.startswith('comfirm_message_del_'),
+        state=[AppStates.STATE_WAIT_MSG]
+
+    )
+
+
+    # Получить текст сообщения
+    dp.register_message_handler(
+        h_admin.wait_get_message_command,
+        content_types=['any'],
+        state=[AppStates.STATE_WAIT_MSG]
+    )
+    dp.register_message_handler(
+        h_admin.wait_get_buttons_command,
+        state=[AppStates.STATE_WAIT_MSG_BUTTON]
+    )
+    dp.register_message_handler(
+        h_admin.wait_get_mass_send_time_command,
+        state=[AppStates.STATE_WAIT_MSG_MASS_SEND_TIME],
+        regexp=r"\d{1,2}:\d{1,2}"
+    )
 
     dp.register_callback_query_handler(h_admin.set_delay_menu,
                                        lambda c: c.data.startswith('set_delay_'))
@@ -111,12 +143,6 @@ def setup_handlers(dp: Dispatcher):
     )
 
     dp.register_message_handler(
-        h_admin.wait_channel_id_command,
-        regexp=r"\d+",
-        state=[AppStates.STATE_WAIT_CHANNEL_ID]
-    )
-
-    dp.register_message_handler(
         h_admin.wait_get_message_command,
         content_types=['any'],
         state=[AppStates.STATE_WAIT_MSG]
@@ -131,6 +157,15 @@ def setup_handlers(dp: Dispatcher):
         h_admin.wait_get_mass_send_time_command,
         state=[AppStates.STATE_WAIT_MSG_MASS_SEND_TIME],
         regexp=r"\d{1,2}:\d{1,2}"
+    )
+
+    dp.register_callback_query_handler(
+        h_admin.delete_channel, 
+        lambda call: call.data.startswith('delete_channel_')
+    )
+    dp.register_callback_query_handler(
+        h_admin.delete_channel_confirm, 
+        lambda call: call.data.startswith('comfirm_channel_del_')
     )
 
     dp.register_message_handler(h.user_send_message_command)

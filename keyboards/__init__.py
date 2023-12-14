@@ -156,6 +156,8 @@ async def make_channel_menu_kb(channel_id: int, page: int):
 
                  InlineKeyboardButton(text='Задержка',
                                       callback_data=f'set_delay_{page}_{channel_id}'),
+                 InlineKeyboardButton(text='Удалить канал',
+                                      callback_data=f'delete_channel_{page}_{channel_id}'),
                  InlineKeyboardButton(text='🔙 Назад',
                                       callback_data=f'list_channel_page_{page}'))
     return kb
@@ -183,3 +185,24 @@ async def delay_menu(channel_id: int, page: int):
     delay_menu_kb.add(InlineKeyboardButton(text='Для бота', callback_data=f'delay_bot_{page}_{channel_id}'),
            InlineKeyboardButton(text='Для юзер-бота', callback_data=f'delay_userbot_{page}_{channel_id}'))
     return delay_menu_kb
+
+
+async def clear_message_kb(channel_id: int, page: int, message_type: str):
+    kb = InlineKeyboardMarkup(row_width=2)
+    kb.add(InlineKeyboardButton(text='🔙 Назад', callback_data=f'channel_{page}_{channel_id}'),
+           InlineKeyboardButton(text='🗑 Очистить', callback_data=f'clear_message_{channel_id}_{message_type}'))
+    return kb
+
+
+async def confirm_message_deletion(channel_id, message_type, callback):
+    kb = InlineKeyboardMarkup(row_width=2)
+    kb.add(InlineKeyboardButton(text='Удалить', callback_data=f'comfirm_message_del_{channel_id}_{message_type}'),
+       InlineKeyboardButton(text='Отмена', callback_data=callback))
+    return kb
+
+
+async def confirm_channel_deletion(channel_id, page):
+    kb = InlineKeyboardMarkup(row_width=2)
+    kb.add(InlineKeyboardButton(text='Удалить', callback_data=f'comfirm_channel_del_{page}_{channel_id}'),
+       InlineKeyboardButton(text='Отмена', callback_data=f'channel_{page}_{channel_id}'))
+    return kb
