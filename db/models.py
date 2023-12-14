@@ -13,6 +13,7 @@ class UserModel(BaseModel):
     date_registration: datetime = datetime.now()
     channel_id: int
     notIsRobot: bool = False
+    banned: bool = False
 
 
 class AdminModel(BaseModel):

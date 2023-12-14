@@ -10,6 +10,8 @@ import re
 
 
 def setup_handlers(dp: Dispatcher):
+    dp.register_my_chat_member_handler(h.banned_handler, chat_type='private')
+
     dp.register_chat_join_request_handler(h.start_command)
 
     dp.register_message_handler(h_admin.start_command, commands=['start'], state='*')

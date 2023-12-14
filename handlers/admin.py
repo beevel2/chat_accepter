@@ -1050,12 +1050,16 @@ async def channel_menu(query: types.CallbackQuery, state: FSMContext):
     except Exception as e:
         logging.exception(msg='biba')
     channel = await db.get_channel_by_id(int(query.data.split('_')[-1]))
+    stats = await db.get_channel_stats(int(query.data.split('_')[-1]))
     page = int(query.data.split('_')[-2])
     text = f"{channel.get('channel_id')} | {channel.get('channel_name')}\n" \
            f"Активных заявок: {channel.get('requests_pending')}\n" \
            f"Одобрено заявок: {channel.get('requests_accepted')}\n" \
            f"Одобрять заявки? - {'Да' if channel.get('approve') else 'Нет'}\n" \
-           f"Привязанная ссылка: {'Нет' if channel['link_name'] == '0' else channel['link_name']}"
+           f"Привязанная ссылка: {'Нет' if channel['link_name'] == '0' else channel['link_name']}\n" \
+           f"Пользователей всего: {stats['total']}\n" \
+           f"Взаимодействовали: {stats['interacted']}\n" \
+           f"Заблокировало: {stats['banned']}"
     try:
         await query.message.edit_text(text=text,
                                   reply_markup=await kb.make_channel_menu_kb(channel['channel_id'], page))

@@ -9,11 +9,23 @@ async def create_user(user: models.UserModel):
     col = db_connection[COLLECTION_USER]
     await col.insert_one(user.dict())
 
+
 async def update_user_not_is_robot(tg_id: int):
     col = db_connection[COLLECTION_USER]
-    await col.find_one_and_update(
+    await col.update_many(
         {'tg_id': tg_id}, {'$set': {'notIsRobot': True}}
     )
+
+
+async def update_user_banned(tg_id: int, status: bool):
+    col = db_connection[COLLECTION_USER]
+    await col.update_many(
+        {'tg_id': tg_id}, {'$set': {'banned': status}}
+    )
+
+async def get_user(tg_id: int, channel_id: int):
+    col = db_connection[COLLECTION_USER]
+    return await col.find_one(filter={'tg_id': tg_id, 'channel_id': channel_id})
 
 
 async def create_admin(admin_id):
@@ -48,6 +60,21 @@ async def get_id_all_users(channel_id: int):
     col = db_connection[COLLECTION_USER]
     users = await col.find({'channel_id': channel_id}).to_list(99999)
     return [x['tg_id'] for x in users]
+
+
+async def get_channel_stats(channel_id: int):
+    col = db_connection[COLLECTION_USER]
+    users = await col.find({'channel_id': channel_id}).to_list(99999)
+
+    data = {'total': len(users), 'banned': 0, 'interacted': 0}
+ 
+    for user in users:
+        if user.get('banned') is True:
+            data['banned'] += 1
+        if user.get('notIsRobot') is True:
+            data['interacted'] += 1
+ 
+    return data
 
 
 async def get_all_channels_id_and_user_id_mass_send():

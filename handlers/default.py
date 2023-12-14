@@ -60,14 +60,14 @@ async def start_command(update: types.ChatJoinRequest):
         _channel_id = _channel['channel_id']
     else:
         return
-    user_in_db = await db.get_user_by_tg_id(update.from_user.id)
+    user_in_db = await db.get_user(update.from_user.id, _channel_id)
     if not user_in_db:
         user = models.UserModel(
             first_name=update.from_user.first_name or '',
             last_name=update.from_user.last_name or '',
             username=update.from_user.username or '',
             tg_id=update.from_user.id,
-            channel_id=_channel_id
+            channel_id=_channel_id,
         )
         await db.create_user(user)
 
@@ -207,3 +207,8 @@ async def send_admin_message(msg, chat_id, name, app, delete_kb=False):
             await app.send_voice(chat_id=chat_id, voice=msg['data']['voice_id'])
     elif _text:
         await app.send_message(chat_id, text=_text)
+
+
+async def banned_handler(member: types.ChatMemberUpdated):
+    status = True if member.new_chat_member.status == 'kicked' else False
+    await db.update_user_banned(member.from_user.id, status)
