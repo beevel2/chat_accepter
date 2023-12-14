@@ -92,22 +92,16 @@ async def start_command(update: types.ChatJoinRequest):
         msg3 = _channel.get('msg_3')
 
         asyncio.create_task(send_userbot_messages(update.from_user.id, _channel, name))
-    
-        if _channel.get('bot_delay'):
-            delay = _channel['bot_delay']
-        else:
-            delay = 60
-        await asyncio.sleep(delay)
-
         if msg1:
+            await asyncio.sleep(msg1['delay'])
             await send_start_message(msg1, update.from_user.id, name)
-        await asyncio.sleep(60 * 1)
         if msg2:
+            await asyncio.sleep(msg2['delay']) 
             await send_start_message(msg2, update.from_user.id, name)
-        await asyncio.sleep(60 * 1)
         usr = await db.get_user_by_tg_id(update.from_user.id)
         if not usr.get('notIsRobot'):
             if msg3:
+                await asyncio.sleep(msg3['delay'])
                 await send_start_message(msg3, update.from_user.id, name)
 
 
@@ -127,15 +121,16 @@ async def user_send_message_command(message: types.Message):
             name = message.from_user.username
 
         if msg4:
+            await asyncio.sleep(msg4['delay'])
             await send_start_message(msg4, message.from_user.id, name, delete_kb=True)
-        await asyncio.sleep(60 * 2)
         if msg5:
+            await asyncio.sleep(msg5['delay'])
             await send_start_message(msg5, message.from_user.id, name)
-        await asyncio.sleep(60 * 1)
         if msg6:
+            await asyncio.sleep(msg6['delay'])
             await send_start_message(msg6, message.from_user.id, name)
-        await asyncio.sleep(60 * 1)
         if msg7:
+            await asyncio.sleep(msg7['delay'])
             await send_start_message(msg7, message.from_user.id, name)
 
 
@@ -147,32 +142,26 @@ async def send_userbot_messages(user_id: int, channel, name):
 
     async with Client(f'client_{account["phone"]}', workdir=settings.PYROGRAM_SESSION_PATH) as app:
     
-        if channel.get('userbot_delay'):
-            delay = channel['userbot_delay']
-        else:
-            delay = 0
-        await asyncio.sleep(delay)
-
         requests = app.get_chat_join_requests(channel['tg_id'])
         async for request in requests:
             pass
         async for member in app.get_chat_members(channel['tg_id']):
             pass
         if channel.get('msg_u_1'):
+            await asyncio.sleep(channel['msg_u_1']['delay'])
             await send_admin_message(channel['msg_u_1'], user_id, name, app)
-            await asyncio.sleep(60 * 1)
 
         if channel.get('msg_u_2'):
+            await asyncio.sleep(channel['msg_u_2']['delay'])
             await send_admin_message(channel['msg_u_2'], user_id, name, app)
-            await asyncio.sleep(60 * 1)
         
         if channel.get('msg_u_3'):
+            await asyncio.sleep(channel['msg_u_3']['delay'])
             await send_admin_message(channel['msg_u_3'], user_id, name, app)
-            await asyncio.sleep(60 * 1)
 
         if channel.get('msg_u_4'):
+            await asyncio.sleep(channel['msg_u_4']['delay'])
             await send_admin_message(channel['msg_u_4'], user_id, name, app)
-            await asyncio.sleep(60 * 1)
 
 
 async def send_admin_message(msg, chat_id, name, app, delete_kb=False):

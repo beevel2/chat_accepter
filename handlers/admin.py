@@ -862,11 +862,17 @@ async def wait_get_buttons_command(
             args=(schedule_data, )
         )
 
+    if msg_type == 'msg_u_1':
+        delay = 0
+    else: 
+        delay = 60
+
     data = {
         'data': _state['data'],
         'buttons': buttons,
         'hour': _h,
-        'minutes': _m
+        'minutes': _m,
+        'delay': delay
     }
 
     await db.update_channel_data(_state['channel_id'], msg_type, data)
@@ -1145,22 +1151,34 @@ async def set_delay_menu(
                                   reply_markup=markup)
 
 
+async def set_delay_pick_message(query: types.CallbackQuery,
+                                 state: FSMContext):
+    await query.answer()
+    data = query.data.split('_')
+    channel_id = int(data[-1])
+    page = int(data[-2])
+    enum = data[-3]
+
+    markup = await kb.message_delay_kb(channel_id, page, enum)
+    await query.message.edit_text(text='Выберите сообщение',
+                                  reply_markup=markup)
+
+
 async def set_delay(
     query: types.CallbackQuery,
     state: FSMContext
     ):
     await query.answer()
-
-    callback_data = query.data.split('_')
-    page = callback_data[-2]
-    channel_id = callback_data[-1]
-    delay_key = callback_data[-3]
+    data = query.data.split('-')
+    channel_id = int(data[-1])
+    page = int(data[-2])
+    enum = data[-3]
 
     await query.message.edit_text('Введите задержку в секундах:',
                                   reply_markup=await kb.make_back_to_channel_menu_kb(channel_id, page))
 
     await state.set_state(AppStates.STATE_GET_DELAY)
-    await state.update_data(page=page, channel_id=channel_id, delay_key=delay_key)
+    await state.update_data(page=page, channel_id=channel_id, enum=enum)
 
 
 async def set_delay_get_message(
@@ -1170,7 +1188,7 @@ async def set_delay_get_message(
     data = await state.get_data()
     page = data['page']
     channel_id = data['channel_id']
-    delay_key = data['delay_key']    
+    enum = data['enum']    
 
     markup = await kb.make_back_to_channel_menu_kb(channel_id, page)
 
@@ -1181,8 +1199,8 @@ async def set_delay_get_message(
                             reply_markup=markup)
         return
 
-    await db.set_delay(int(channel_id), delay, delay_key)
-    await message.answer(text=f'Задержка на {channel_id} канале для {delay_key} теперь {delay} секунд',
+    await db.set_delay(int(channel_id), delay, enum)
+    await message.answer(text=f'Задержка на {channel_id} канале для {enum} теперь {delay} секунд',
                          reply_markup=markup)
     await state.reset_state()
     await state.reset_data()

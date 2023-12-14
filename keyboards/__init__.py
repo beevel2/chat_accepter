@@ -180,6 +180,7 @@ retie_kb = InlineKeyboardMarkup(row_width=2)
 retie_kb.add(InlineKeyboardButton(text='Да', callback_data='retie_acc_yes'),
              InlineKeyboardButton(text='Нет', callback_data='retie_acc_no'))
 
+
 async def delay_menu(channel_id: int, page: int):
     delay_menu_kb = InlineKeyboardMarkup(row_width=1)
     delay_menu_kb.add(InlineKeyboardButton(text='Для бота', callback_data=f'delay_bot_{page}_{channel_id}'),
@@ -205,4 +206,33 @@ async def confirm_channel_deletion(channel_id, page):
     kb = InlineKeyboardMarkup(row_width=2)
     kb.add(InlineKeyboardButton(text='Удалить', callback_data=f'comfirm_channel_del_{page}_{channel_id}'),
        InlineKeyboardButton(text='Отмена', callback_data=f'channel_{page}_{channel_id}'))
+    return kb
+
+
+async def message_delay_kb(channel_id: int, page: int, enum: str):
+    kb = InlineKeyboardMarkup(row_width=2)
+    msg_name_dict = {
+        'msg_1': 'Приветственное',
+        'msg_2': 'Взаимодействие 1',
+        'msg_3': 'Взаимодействие 2',
+        'msg_4': 'Подтверждение',
+        'msg_5': 'Ознакомление',
+        'msg_6': 'Информация 1',
+        'msg_7': 'Информация 2',
+        'msg_u_1': 'Приветственное',
+        'msg_u_2': 'Ознакомление',
+        'msg_u_3': 'Информация 1',
+        'msg_u_4': 'Информация 2'
+    }
+    if enum == 'userbot':
+        messages = await db.get_messages_userbot(channel_id)
+    else:
+        messages = await db.get_messages_bot(channel_id)
+
+    for key, value in messages.items():
+        kb.add(InlineKeyboardButton(text=msg_name_dict[key],
+                                    callback_data=f'edit-delay-{key}-{page}-{channel_id}'),
+               InlineKeyboardButton(text=str(value['delay']),
+                                    callback_data=f'edit-delay-{key}-{page}-{channel_id}'))
+    kb.row(InlineKeyboardButton(text='🔙 Назад', callback_data=f'channel_{page}_{channel_id}'))
     return kb
