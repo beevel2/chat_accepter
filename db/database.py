@@ -276,11 +276,11 @@ async def del_account(acc_id: int):
     account = await col.find_one(filter={'account_id': acc_id})
     await col.delete_one({'account_id': acc_id})
     try:
-        os.remove(os.path.join(PYROGRAM_SESSION_PATH, f'client_{account['phone']}.session'))
+        os.remove(os.path.join(PYROGRAM_SESSION_PATH, f'client_{account["phone"]}.session'))
     except:
         pass
     try:
-        os.remove(os.path.join(PYROGRAM_SESSION_PATH, f'client_{account['phone']}.sessionjournal'))
+        os.remove(os.path.join(PYROGRAM_SESSION_PATH, f'client_{account["phone"]}.sessionjournal'))
     except:
         pass
 
