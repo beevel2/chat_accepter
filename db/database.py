@@ -123,17 +123,20 @@ async def create_channel(channel: models.ChannelModel):
 
 async def get_channel_by_id(channel_id: int):
     col = db_connection[COLLECTION_CHANNELS]
-    return await col.find_one(filter={'channel_id': channel_id})
+    record = await col.find_one(filter={'channel_id': channel_id})
+    return record
 
 
 async def get_channel_by_tg_id(tg_id: int):
     col = db_connection[COLLECTION_CHANNELS]
-    return await col.find_one(filter={'tg_id': tg_id})
+    record = await col.find_one(filter={'tg_id': tg_id})
+    return record
 
 
 async def get_channel_by_link_name(link_name: str):
     col = db_connection[COLLECTION_CHANNELS]
-    return await col.find_one(filter={'chat_id': link_name})
+    record = await col.find_one(filter={'chat_id': link_name})
+    return record
 
 
 async def update_channel_data(channel_id, field, data):
