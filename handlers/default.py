@@ -3,6 +3,8 @@ import asyncio
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
+from pyrogram import types as pt
+
 import db.database as db
 import db.models as models
 
@@ -177,33 +179,53 @@ async def send_userbot_messages(user_id: int, channel, name):
 async def send_admin_message(msg, chat_id, name, app, delete_kb=False):
     _text = replace_in_message(msg['data']['text'], 'USER', name) 
     if msg['data']['video_note_id']:
-        await app.send_video_note(chat_id=chat_id, video_note=io.BytesIO(msg['data']['video_note_id']))
+        file = io.BytesIO(msg['data']['video_note_id'])
+        file.name = 'video_note'
+        await app.send_video_note(chat_id=chat_id, video_note=file)
     elif msg['data']['photos'] and len(msg['data']['photos']) == 1:
         if _text:
-            await app.send_photo(chat_id=chat_id, photo=io.BytesIO(msg['data']['photos'][0]), caption=_text)
+            file = io.BytesIO(msg['data']['photos'][0])
+            file.name = 'photo'
+            await app.send_photo(chat_id=chat_id, photo=file, caption=_text)
         else:
-            await app.send_photo(chat_id=chat_id, photo=io.BytesIO(msg['data']['photos'][0]))
+            file = io.BytesIO(msg['data']['photos'][0])
+            file.name = 'photo'
+            await app.send_photo(chat_id=chat_id, photo=file)
     elif msg['data']['photos'] or msg['data']['video_id']:
-        media = types.MediaGroup()
+        media = []
         if msg['data']['photos']:
             for _i, p in enumerate(msg['data']['photos']):
                 if _i == 0 and _text:
-                    media.attach_photo(photo=io.BytesIO(p), caption=_text)
+                    file = io.BytesIO(p)
+                    file.name = 'photo'
+                    media.append(pt.InputMediaPhoto(media=file, caption=_text))
                 else:
-                    media.attach_photo(photo=io.BytesIO(p))
+                    file = io.BytesIO(p)
+                    file.name = 'photo'
+                    media.append(pt.InputMediaPhoto(media=file))
         if msg['data']['video_id']:
-            media.attach_video(msg['data']['video_id'])
+            file = io.BytesIO(msg['data']['video_id'])
+            file.name = 'video'
+            media.append(pt.InputMediaVideo(media=file))
         await app.send_media_group(chat_id, media=media)
     elif msg['data']['animation_id']:
         if _text:
-            await app.send_animation(chat_id=chat_id, animation=io.BytesIO(msg['data']['animation_id']), caption=_text)
+            file = io.BytesIO(msg['data']['animation_id'])
+            file.name = 'video'
+            await app.send_animation(chat_id=chat_id, animation=file, caption=_text)
         else:
-            await app.send_animation(chat_id=chat_id, animation=io.BytesIO(msg['data']['animation_id']))
+            file = io.BytesIO(msg['data']['animation_id'])
+            file.name = 'video'
+            await app.send_animation(chat_id=chat_id, animation=file)
     elif msg['data']['voice_id']:
         if _text:
-            await app.send_voice(chat_id=chat_id, voice=io.BytesIO(msg['data']['voice_id']), caption=_text)
+            file = io.BytesIO(msg['data']['voice_id'])
+            file.text = 'voice'
+            await app.send_voice(chat_id=chat_id, voice=file, caption=_text)
         else:
-            await app.send_voice(chat_id=chat_id, voice=io.BytesIO(msg['data']['voice_id']))
+            file = io.BytesIO(msg['data']['voice_id'])
+            file.text = 'voice'
+            await app.send_voice(chat_id=chat_id, voice=file)
     elif _text:
         await app.send_message(chat_id, text=_text)
 
