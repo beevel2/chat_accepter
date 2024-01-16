@@ -269,43 +269,37 @@ async def get_message_command(
     except Exception:
         pass
     if album:
-
-        data['photos'] = []
-        for i in album:
-            if i.photo:
-                file = io.BytesIO()
-                await i.photo[-1].download(destination_file=file)
-                data['photos'].append(file.getvalue())
+        data['photos'] = [f'{p.photo[-1].file_id}.jpg' for p in album if p.photo]
         if len(data['photos']) == 0 and len(album) == 1:
-            file = io.BytesIO()
             if album[0].content_type == 'animation':
-                await album[0].animation.download(destination_file=file)
-                data['animation_id'] = file.getvalue()
+                data['animation_id'] = album[0].animation.file_id
+                await download_file(data['animation_id'])
             elif album[0].content_type == 'video':
-                await album[0].video.download(destination_file=file)
-                data['video_id'] = file.getvalue()
+                data['video_id'] = album[0].video.file_id
+                await download_file(data['video_id'])
             elif album[0].content_type == 'video_note':
-                await album[0].video_note.download(destination_file=file)
-                data['video_note_id'] = file.getvalue()
+                data['video_note_id'] = album[0].video_note.file_id
+                await download_file(data['video_note_id'])
             elif album[0].content_type == 'voice':
-                await album[0].voice.download(destination_file=file)
-                data['voice_id'] = file.getvalue()
-    elif message.video:
-        file = io.BytesIO()
-        await message.video.download(destination_file=file)
-        data['video_id'] = file.getvalue()
-    elif message.video_note:
-        file = io.BytesIO()
-        message.video_note.download(destination_file=file)
-        data['video_note_id'] = file.getvalue()
-    elif message.animation:
-        file = io.BytesIO()
-        await message.animation.download(destination_file=file)
-        data['animation'] = file.getvalue()
-    elif message.voice:
-        file = io.BytesIO()
-        await message.voice.download(destination_file=file)
-        data['voice_id'] = file.getvalue()
+                data['voice_id'] = album[0].voice.file_id
+                data['voice_duration'] = album[0].voice.duration
+                await download_file(data['voice_id'], voice=True)
+            if len(data['photos']) > 0:
+                for _photo in data['photos']:
+                    await download_file(_photo)
+        elif message.video:
+            data['video_id'] = message.video.file_id
+            await download_file(data['video_id'])
+        elif message.video_note:
+            data['video_note_id'] = message.video_note.file_id
+            await download_file(data['video_note_id'])
+        elif message.animation:
+            data['animation'] = message.animation.file_id
+            await download_file(data['animation'])
+        elif message.voice:
+            data['voice_id'] = message.voice.file_id
+            data['voice_duration'] = message.voice.duration
+            await download_file(data['voice_id'], voice=True)
     await state.update_data({'data': data})
     await state.set_state(AppStates.STATE_MESSAGE_BUTTONS)
     await message.answer('Введите кнопки')
@@ -774,39 +768,38 @@ async def wait_get_message_command(
         data['text'] = message.html_text
     except Exception:
         pass
-    file = io.BytesIO()
     if album:
-        data['photos'] = []
-        for i in album:
-            if i.photo:
-                file = io.BytesIO()
-                await i.photo[-1].download(destination_file=file)
-                data['photos'].append(file.getvalue())
+        data['photos'] = [f'{p.photo[-1].file_id}.jpg' for p in album if p.photo]
         if len(data['photos']) == 0 and len(album) == 1:
             if album[0].content_type == 'animation':
-                album[0].animation.download(destination_file=file)
-                data['animation_id'] = file.getvalue()
+                data['animation_id'] = album[0].animation.file_id
+                await download_file(data['animation_id'])
             elif album[0].content_type == 'video':
-                await album[0].video.download(destination_file=file)
-                data['video_id'] = file.getvalue()
+                data['video_id'] = album[0].video.file_id
+                await download_file(data['video_id'])
             elif album[0].content_type == 'video_note':
-                await album[0].video_note.download(destination_file=file)
-                data['video_note_id'] = file.getvalue()
+                data['video_note_id'] = album[0].video_note.file_id
+                await download_file(data['video_note_id'])
             elif album[0].content_type == 'voice':
-                await album[0].voice.download(destination_file=file)
-                data['voice_id'] = file.getvalue()
+                data['voice_id'] = album[0].voice.file_id
+                data['voice_duration'] = album[0].voice.duration
+                await download_file(data['voice_id'], voice=True)
+        if len(data['photos']) > 0:
+            for _photo in data['photos']:
+                await download_file(_photo)
     elif message.video:
-        await message.video.download(destination_file=file)
-        data['video_id'] = file.getvalue()
+        data['video_id'] = message.video.file_id
+        await download_file(data['video_id'])
     elif message.video_note:
-        await message.video_note.download(destination_file=file)
-        data['video_note_id'] = file.getvalue()
+        data['video_note_id'] = message.video_note.file_id
+        await download_file(data['video_note_id'])
     elif message.animation:
-        await message.animation.download(destination_file=file)
-        data['animation'] = file.getvalue()
+        data['animation'] = message.animation.file_id
+        await download_file(data['animation'])
     elif message.voice:
-        await message.voice.download(destination_file=file)
-        data['voice_id'] = file.getvalue() 
+        data['voice_id'] = message.voice.file_id
+        data['voice_duration'] = message.voice.duration
+        await download_file(data['voice_id'], voice=True)
     _state = await state.get_data()
     await state.update_data({'data': data})
     if _state['callback'] == 'edit_msg_mass':
