@@ -164,3 +164,4 @@ settings.py
 *.txt
 settings.py
 sessions/
+files/

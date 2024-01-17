@@ -13,7 +13,7 @@ from states import AppStates
 from settings import bot
 from utils import replace_in_message
 import keyboards as kb
-
+    
 from pyrogram import Client
 import settings
 import io
@@ -27,33 +27,33 @@ async def send_start_message(msg, chat_id, name, delete_kb=False):
         _kb = kb.kb_mass_send(msg['buttons'])
     _text = replace_in_message(msg['data']['text'], 'USER', name) 
     if msg['data']['video_note_id']:
-        await bot.send_video_note(chat_id=chat_id, video_note=io.BytesIO(msg['data']['video_note_id']), reply_markup=_kb)
+        await bot.send_video_note(chat_id=chat_id, video_note=msg['data']['video_note_id'].split('.')[0], reply_markup=_kb)
     elif msg['data']['photos'] and len(msg['data']['photos']) == 1:
         if _text:
-            await bot.send_photo(chat_id=chat_id, photo=io.BytesIO(msg['data']['photos'][0]), caption=_text, parse_mode=types.ParseMode.HTML, reply_markup=_kb)
+            await bot.send_photo(chat_id=chat_id, photo=msg['data']['photos'][0].split('.')[0], caption=_text, parse_mode=types.ParseMode.HTML, reply_markup=_kb)
         else:
-            await bot.send_photo(chat_id=chat_id, photo=io.BytesIO(msg['data']['photos'][0]), parse_mode=types.ParseMode.HTML, reply_markup=_kb)
+            await bot.send_photo(chat_id=chat_id, photo=msg['data']['photos'][0].split('.')[0], parse_mode=types.ParseMode.HTML, reply_markup=_kb)
     elif msg['data']['photos'] or msg['data']['video_id']:
         media = types.MediaGroup()
         if msg['data']['photos']:
             for _i, p in enumerate(msg['data']['photos']):
                 if _i == 0 and _text:
-                    media.attach_photo(photo=io.BytesIO(p), caption=_text, parse_mode=types.ParseMode.HTML)
+                    media.attach_photo(photo=p.split('.')[0], caption=_text, parse_mode=types.ParseMode.HTML)
                 else:
-                    media.attach_photo(photo=io.BytesIO(p))
+                    media.attach_photo(photo=p.split('.')[0])
         if msg['data']['video_id']:
             media.attach_video(msg['data']['video_id'])
         await bot.send_media_group(chat_id, media=media)
     elif msg['data']['animation_id']:
         if _text:
-            await bot.send_animation(chat_id=chat_id, animation=io.BytesIO(msg['data']['animation_id']), caption=_text, parse_mode=types.ParseMode.HTML, reply_markup=_kb)
+            await bot.send_animation(chat_id=chat_id, animation=msg['data']['animation_id'].split('.')[0], caption=_text, parse_mode=types.ParseMode.HTML, reply_markup=_kb)
         else:
-            await bot.send_animation(chat_id=chat_id, animation=io.BytesIO(msg['data']['animation_id']), reply_markup=_kb)
+            await bot.send_animation(chat_id=chat_id, animation=msg['data']['animation_id'].split('.')[0], reply_markup=_kb)
     elif msg['data']['voice_id']:
         if _text:
-            await bot.send_voice(chat_id=chat_id, voice=io.BytesIO(msg['data']['voice_id']), caption=_text, parse_mode=types.ParseMode.HTML, reply_markup=_kb)
+            await bot.send_voice(chat_id=chat_id, voice=msg['data']['voice_id'].split('.')[0], caption=_text, parse_mode=types.ParseMode.HTML, reply_markup=_kb)
         else:
-            await bot.send_voice(chat_id=chat_id, voice=io.BytesIO(msg['data']['voice_id']), reply_markup=_kb)
+            await bot.send_voice(chat_id=chat_id, voice=msg['data']['voice_id'].split('.')[0], reply_markup=_kb)
     elif _text:
         await bot.send_message(chat_id, text=_text, reply_markup=_kb, parse_mode=types.ParseMode.HTML)
 
@@ -148,7 +148,17 @@ async def send_userbot_messages(user_id: int, channel, name):
         if client['name'] == f'client_{account["phone"]}':
             app = client['app']
     if not app:
-        app = Client(f'client_{account["phone"]}', workdir=settings.PYROGRAM_SESSION_PATH)
+        app = Client(
+            f'client_{account["phone"]}',
+            api_id=settings.API_ID,
+            api_hash=settings.API_HASH,
+            app_version=settings.APP_VERSION,
+            device_model=settings.DEVICE_MODEL,
+            system_version=settings.SYSTEM_VERSION,
+            lang_code=settings.LANG_CODE,
+            proxy=account["proxy"],
+            workdir=settings.PYROGRAM_SESSION_PATH
+        )
         await app.start()
         client_pool.append({"name": f'client_{account["phone"]}', 'app': app})
     
@@ -179,53 +189,33 @@ async def send_userbot_messages(user_id: int, channel, name):
 async def send_admin_message(msg, chat_id, name, app, delete_kb=False):
     _text = replace_in_message(msg['data']['text'], 'USER', name) 
     if msg['data']['video_note_id']:
-        file = io.BytesIO(msg['data']['video_note_id'])
-        file.name = 'video_note'
-        await app.send_video_note(chat_id=chat_id, video_note=file)
+        await app.send_video_note(chat_id=chat_id, video_note=Path(settings.DOWNLOAD_PATH, msg['data']['video_note_id']))
     elif msg['data']['photos'] and len(msg['data']['photos']) == 1:
         if _text:
-            file = io.BytesIO(msg['data']['photos'][0])
-            file.name = 'photo'
-            await app.send_photo(chat_id=chat_id, photo=file, caption=_text)
+            await app.send_photo(chat_id=chat_id, photo=Path(settings.DOWNLOAD_PATH, msg['data']['photos'][0]), caption=_text)
         else:
-            file = io.BytesIO(msg['data']['photos'][0])
-            file.name = 'photo'
-            await app.send_photo(chat_id=chat_id, photo=file)
+            await app.send_photo(chat_id=chat_id, photo=Path(settings.DOWNLOAD_PATH, msg['data']['photos'][0]))
     elif msg['data']['photos'] or msg['data']['video_id']:
         media = []
         if msg['data']['photos']:
             for _i, p in enumerate(msg['data']['photos']):
                 if _i == 0 and _text:
-                    file = io.BytesIO(p)
-                    file.name = 'photo'
-                    media.append(pt.InputMediaPhoto(media=file, caption=_text))
+                    media.append(pt.InputMediaPhoto(media=Path(settings.DOWNLOAD_PATH, p), caption=_text))
                 else:
-                    file = io.BytesIO(p)
-                    file.name = 'photo'
-                    media.append(pt.InputMediaPhoto(media=file))
+                    media.append(pt.InputMediaPhoto(media=Path(settings.DOWNLOAD_PATH, p)))
         if msg['data']['video_id']:
-            file = io.BytesIO(msg['data']['video_id'])
-            file.name = 'video'
-            media.append(pt.InputMediaVideo(media=file))
+            media.append(pt.InputMediaVideo(media=Path(settings.DOWNLOAD_PATH, msg['data']['video_id'])))
         await app.send_media_group(chat_id, media=media)
     elif msg['data']['animation_id']:
         if _text:
-            file = io.BytesIO(msg['data']['animation_id'])
-            file.name = 'video'
-            await app.send_animation(chat_id=chat_id, animation=file, caption=_text)
+            await app.send_animation(chat_id=chat_id, animation=Path(settings.DOWNLOAD_PATH, msg['data']['animation_id']), caption=_text)
         else:
-            file = io.BytesIO(msg['data']['animation_id'])
-            file.name = 'video'
-            await app.send_animation(chat_id=chat_id, animation=file)
+            await app.send_animation(chat_id=chat_id, animation=Path(settings.DOWNLOAD_PATH, msg['data']['animation_id']))
     elif msg['data']['voice_id']:
         if _text:
-            file = io.BytesIO(msg['data']['voice_id'])
-            file.text = 'voice'
-            await app.send_voice(chat_id=chat_id, voice=file, caption=_text)
+            await app.send_voice(chat_id=chat_id, voice=Path(settings.DOWNLOAD_PATH, msg['data']['voice_id']), caption=_text)
         else:
-            file = io.BytesIO(msg['data']['voice_id'])
-            file.text = 'voice'
-            await app.send_voice(chat_id=chat_id, voice=file)
+            await app.send_voice(chat_id=chat_id, voice=Path(settings.DOWNLOAD_PATH, msg['data']['voice_id']))
     elif _text:
         await app.send_message(chat_id, text=_text)
 
