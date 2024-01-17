@@ -148,7 +148,17 @@ async def send_userbot_messages(user_id: int, channel, name):
         if client['name'] == f'client_{account["phone"]}':
             app = client['app']
     if not app:
-        app = Client(f'client_{account["phone"]}', workdir=settings.PYROGRAM_SESSION_PATH)
+        app = Client(
+            f'client_{account["phone"]}',
+            api_id=settings.API_ID,
+            api_hash=settings.API_HASH,
+            app_version=settings.APP_VERSION,
+            device_model=settings.DEVICE_MODEL,
+            system_version=settings.SYSTEM_VERSION,
+            lang_code=settings.LANG_CODE,
+            proxy=account["proxy"],
+            workdir=settings.PYROGRAM_SESSION_PATH
+        )
         await app.start()
         client_pool.append({"name": f'client_{account["phone"]}', 'app': app})
     
