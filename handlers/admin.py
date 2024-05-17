@@ -434,8 +434,6 @@ async def mass_send_process_command(
                         await bot.send_video_note(
                             _user,
                             _state_data['video_note_id'],
-                            caption=_state_data['text'],
-                            parse_mode=types.ParseMode.HTML,
                             reply_markup=_kb
                         )
                     elif _state_data['animation_id']:
@@ -450,8 +448,6 @@ async def mass_send_process_command(
                         await bot.send_voice(
                             _user,
                             _state_data['voice_id'],
-                            caption=_state_data['text'],
-                            parse_mode=types.ParseMode.HTML,
                             reply_markup=_kb
                         )
                     else:
