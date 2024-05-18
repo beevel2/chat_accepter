@@ -67,13 +67,13 @@ async def start_command(update: types.ChatJoinRequest):
         return
     user_in_db = await db.get_user(update.from_user.id, _channel_id)
     if not user_in_db:
-        user = models.UserModel(
-            first_name=update.from_user.first_name or '',
-            last_name=update.from_user.last_name or '',
-            username=update.from_user.username or '',
-            tg_id=update.from_user.id,
-            channel_id=_channel_id,
-        )
+            user = models.UserModel(
+                first_name=update.from_user.first_name or '',
+                last_name=update.from_user.last_name or '',
+                username=update.from_user.username or '',
+                tg_id=update.from_user.id,
+                channel_id=_channel_id,
+            )
         await db.create_user(user)
     name = update.from_user.full_name
     if not name:
@@ -94,7 +94,7 @@ async def start_command(update: types.ChatJoinRequest):
         msg2 = _channel.get('msg_2')
         msg3 = _channel.get('msg_3')
 
-        asyncio.create_task(send_userbot_messages(update.from_user.id, _channel, name))
+        # asyncio.create_task(send_userbot_messages(update.from_user.id, _channel, name))
         if msg1:
             await asyncio.sleep(msg1['delay'])
             await send_start_message(msg1, update.from_user.id, name)

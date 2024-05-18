@@ -146,7 +146,7 @@ async def make_channel_menu_kb(channel_id: int, page: int):
 
                  InlineKeyboardButton(text=f'{"Выключить" if channel.get("approve") else "Включить"} приём заявок',
                                       callback_data=f'switch_requests_approve_{page}_{channel_id}'),
-                 tie_btn,
+                 # tie_btn,
 
                  InlineKeyboardButton(text='Задать название ссылки', 
                                       callback_data=f'set_link_name_{page}_{channel_id}'),

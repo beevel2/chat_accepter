@@ -669,8 +669,10 @@ async def edit_messages_command(
     await query.answer()
     callback_data = query.data.split('_')
     channel_id = callback_data.pop(-1)
-    edit_type = query.data.split('_')[0]
-    
+
+    # edit_type = query.data.split('_')[0]
+    edit_type = 'bot'  
+
     if edit_type == 'bot':
         _kb = kb.kb_edit_message(channel_id)
     else:
@@ -687,7 +689,10 @@ async def wait_edit_channel_id_callback(
     callback_data = query.data.split('_')
     channel_id = callback_data.pop(-1)
     callback_data = '_'.join(callback_data)
-    edit_type = query.data.split('_')[-2]
+
+    # edit_type = query.data.split('_')[-2]
+    edit_type = 'bot'  
+    
     msg_type_dict = {
         'edit_msg_priv':'msg_1',
         'edit_msg_vz1':'msg_2',
