@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from datetime import datetime
 
@@ -43,3 +43,16 @@ class ChannelModel(BaseModel):
 
 
 
+class MessageModel(BaseModel):
+    text: str = ''
+    photos: Optional[list] = []
+    video_id: Optional[str] = None
+    video_note_id: Optional[str] = None
+    animation_id: Optional[str] = None
+    voice_id: Optional[str] = None
+    button_text: str = ''
+
+class PushModel(BaseModel):
+    data: MessageModel = MessageModel()
+    channel_id: int
+    

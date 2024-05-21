@@ -1,6 +1,10 @@
+import settings
 from settings import db_connection, COLLECTION_USER, COLLECTION_MESSAGES, COLLECTION_ADMIN, COLLECTION_CHANNELS, COLLECTION_ACCOUNTS, PYROGRAM_SESSION_PATH
 import db.models as models
 import os
+
+from bson.objectid import ObjectId
+
 
 
 
@@ -313,3 +317,33 @@ async def get_messages_userbot(channel_id: int):
         if channel.get(f'msg_u_{i}'):
             messages[f'msg_u_{i}'] = channel.get(f'msg_u_{i}')
     return messages
+
+
+async def fetch_channel_pushes(channel_id: int):
+    col = db_connection[settings.COLLECTION_PUSHES]
+
+    return (await col.find(dict(channel_id=int(channel_id))).to_list(999999))
+
+
+async def add_empty_push(channel_id: int):
+    col = db_connection[settings.COLLECTION_PUSHES]
+
+    await col.insert_one(models.PushModel(channel_id=int(channel_id), data=models.MessageModel().dict()).dict())
+
+
+async def delete_push(_id):
+    col = db_connection[settings.COLLECTION_PUSHES]
+
+    await col.delete_one({'_id': _id})
+
+
+async def update_push(_id, data):
+    col = db_connection[settings.COLLECTION_PUSHES]
+
+    await col.update_one({'_id': ObjectId(str(_id))}, {'$set': {'data': data}})
+
+
+async def fetch_channel_user(channel_id, user_id):
+    col = db_connection[settings.COLLECTION_USER]
+
+    return (await col.find_one({'tg_id': int(user_id), 'channel_id': int(channel_id)}))

@@ -40,3 +40,6 @@ class AppStates(Helper):
     STATE_GET_LINK = Item()
     
     STATE_GET_DELAY = Item()
+
+    STATE_GET_PUSH_DATA = Item()
+    STATE_GET_PUSH_BUTTON = Item()

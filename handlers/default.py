@@ -20,11 +20,13 @@ import io
 
 client_pool = []
 
-async def send_start_message(msg, chat_id, name, delete_kb=False):
+async def send_start_message(msg, chat_id, name, delete_kb=False, msg_type='default', push_index=None):
     if delete_kb:
         _kb = kb.ReplyKeyboardRemove()
-    else:
+    elif msg_type == 'default':
         _kb = kb.kb_mass_send(msg['buttons'])
+    elif msg_type == 'push':
+        _kb = await kb.user_push_kb(msg['data']['button_text'], msg['channel_id'], push_index)
     _text = replace_in_message(msg['data']['text'], 'USER', name) 
     if msg['data']['video_note_id']:
         await bot.send_video_note(chat_id=chat_id, video_note=msg['data']['video_note_id'].split('.')[0], reply_markup=_kb)
@@ -44,6 +46,9 @@ async def send_start_message(msg, chat_id, name, delete_kb=False):
         if msg['data']['video_id']:
             media.attach_video(msg['data']['video_id'])
         await bot.send_media_group(chat_id, media=media)
+
+        if msg_type == 'push':
+            await bot.send_message(chat_id, text=_text or '.', reply_markup=_kb)
     elif msg['data']['animation_id']:
         if _text:
             await bot.send_animation(chat_id=chat_id, animation=msg['data']['animation_id'].split('.')[0], caption=_text, parse_mode=types.ParseMode.HTML, reply_markup=_kb)
@@ -61,19 +66,20 @@ async def send_start_message(msg, chat_id, name, delete_kb=False):
 async def start_command(update: types.ChatJoinRequest):
     _channel_id = -1
     _channel = await db.get_channel_by_tg_id(update.chat.id)
+
     if _channel:
         _channel_id = _channel['channel_id']
     else:
         return
     user_in_db = await db.get_user(update.from_user.id, _channel_id)
     if not user_in_db:
-            user = models.UserModel(
-                first_name=update.from_user.first_name or '',
-                last_name=update.from_user.last_name or '',
-                username=update.from_user.username or '',
-                tg_id=update.from_user.id,
-                channel_id=_channel_id,
-            )
+        user = models.UserModel(
+            first_name=update.from_user.first_name or '',
+            last_name=update.from_user.last_name or '',
+            username=update.from_user.username or '',
+            tg_id=update.from_user.id,
+            channel_id=_channel_id,
+        )
         await db.create_user(user)
     name = update.from_user.full_name
     if not name:
@@ -223,3 +229,31 @@ async def send_admin_message(msg, chat_id, name, app, delete_kb=False):
 async def banned_handler(member: types.ChatMemberUpdated):
     status = True if member.new_chat_member.status == 'kicked' else False
     await db.update_user_banned(member.from_user.id, status)
+
+
+async def unsub_handler(chat_member: types.ChatMemberUpdated):
+    if not (chat_member.new_chat_member.status == 'left'):
+        return
+
+
+    user_id = chat_member.from_user.id
+    channel_tg_id = chat_member.chat.id
+
+    channel = await db.get_channel_by_tg_id(channel_tg_id)
+    pushes = await db.fetch_channel_pushes(channel['channel_id'])
+
+    await send_start_message(pushes[0], user_id, chat_member.from_user.full_name, delete_kb=False, msg_type='push', push_index=0)
+
+
+async def next_push_handler(query: types.CallbackQuery):
+    await query.answer()
+
+    channel_id = int(query.data.split('_')[-2])
+    push_index = int(query.data.split('_')[-1])
+
+    pushes = await db.fetch_channel_pushes(channel_id)
+
+    try:
+        await send_start_message(pushes[push_index], query.from_user.id, query.from_user.full_name, delete_kb=False, msg_type='push', push_index=push_index)
+    except IndexError:
+        print(f'Ran out of pushes on channel {channel_id} at push_index={push_index}')

@@ -17,3 +17,13 @@ async def download_file(file_id: str, voice=False):
 
 def replace_in_message(message: str, s_from:str, s_to: str) -> str:
     return message.replace(s_from, str(s_to))
+
+
+def check_message_has_data(msg, ignore_keys):
+    value = 0
+
+    for key in msg:
+        if not (key in ignore_keys):
+            value += bool(msg[key])
+
+    return value
