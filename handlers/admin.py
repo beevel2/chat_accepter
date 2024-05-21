@@ -1169,11 +1169,17 @@ async def set_delay_menu(
     query: types.CallbackQuery,
     state: FSMContext
     ):
-    await query.answer()
 
     callback_data = query.data.split('_')
     page = callback_data[-2]
     channel_id = callback_data[-1]
+    
+    # comment to enable userbot
+    query.data = f'delay_bot_{page}_{channel_id}'
+    await set_delay_pick_message(query, state)
+    return
+    #########
+    await query.answer()
 
     markup = await kb.delay_menu(channel_id, page)
     await query.message.edit_text(text='Для кого редактировать задержку?', 
