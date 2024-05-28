@@ -67,7 +67,7 @@ async def start_command(update: types.ChatJoinRequest):
         return
     user_in_db = await db.get_user(update.from_user.id, _channel_id)
     if not user_in_db:
-            user = models.UserModel(
+        user = models.UserModel(
                 first_name=update.from_user.first_name or '',
                 last_name=update.from_user.last_name or '',
                 username=update.from_user.username or '',
