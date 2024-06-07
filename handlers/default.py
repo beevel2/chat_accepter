@@ -232,6 +232,9 @@ async def banned_handler(member: types.ChatMemberUpdated):
 
 
 async def unsub_handler(chat_member: types.ChatMemberUpdated):
+    # breakpoint()
+    # print(dict(chat_member))
+    # chat_member.new_chat_member.status == 'left'
     if not (chat_member.new_chat_member.status == 'left'):
         return
 

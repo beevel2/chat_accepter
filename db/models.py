@@ -50,7 +50,7 @@ class MessageModel(BaseModel):
     video_note_id: Optional[str] = None
     animation_id: Optional[str] = None
     voice_id: Optional[str] = None
-    button_text: str = ''
+    button_text: List[dict] = []
 
 class PushModel(BaseModel):
     data: MessageModel = MessageModel()

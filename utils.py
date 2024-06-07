@@ -1,6 +1,11 @@
 from pathlib import Path
 from settings import bot, DOWNLOAD_PATH
 
+import logging
+
+logging.basicConfig(level=logging.INFO, 
+                    format="%(asctime)s %(levelname)s %(message)s")
+logger = logging.getLogger(__name__)
 
 async def download_file(file_id: str, voice=False):
     filename = file_id

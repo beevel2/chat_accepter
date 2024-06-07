@@ -272,6 +272,10 @@ async def back_to_pushes_kb(channel_id):
 
 async def user_push_kb(button_text, channel_id, push_index):
     kb = InlineKeyboardMarkup(row_width=1)
-    kb.add(InlineKeyboardButton(text=button_text, callback_data=f'next_push_{channel_id}_{push_index + 1}'))
+    for button in button_text:
+        if not button['url']:
+            kb.add(InlineKeyboardButton(text=button['text'], callback_data=f'next_push_{channel_id}_{push_index + 1}'))
+        else:
+            kb.add(InlineKeyboardButton(text=button['text'], url=button['url']))
 
     return kb    

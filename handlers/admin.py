@@ -1405,14 +1405,28 @@ async def edit_push_get_data(
 
     markup = await kb.back_to_pushes_kb(state_data['channel_id'])
     await bot.send_message(chat_id=message.from_user.id,
-                           text='Введите текст для кнопки взаимодействия',
-                           reply_markup=markup)
+                           text="""Введите кнопки
+
+Формат ввода:
+1. Переходи - https://t.me/durov 
+2. Далее 
+
+Кнопка 2 ведет пользователя к следующему сообщению. Допустим ввод списком.""",
+                           reply_markup=markup,
+                           disable_web_page_preview=True)
 
 
 async def edit_push_get_button(message: types.Message, state: FSMContext):
+    data = []
+    for button_data in message.text.split('\n'):
+        if len(button_data.split(' - ')) == 1:
+            data.append({'text': button_data, 'url': None})
+        elif len(button_data.split(' - ')) == 2:
+            data.append({'text': button_data.split(' - ')[0], 'url': button_data.split(' - ')[1]})
+
     state_data = await state.get_data()
     await state.finish()
-    state_data['data']['button_text'] = message.text
+    state_data['data']['button_text'] = data
 
     push = (await db.fetch_channel_pushes(state_data['channel_id']))[state_data['push_id']]
     await db.update_push(push['_id'], state_data['data'])
