@@ -62,6 +62,16 @@ async def send_start_message(msg, chat_id, name, delete_kb=False, msg_type='defa
     elif _text:
         await bot.send_message(chat_id, text=_text, reply_markup=_kb, parse_mode=types.ParseMode.HTML)
 
+    if msg_type == "push":
+        for btn in msg['data']['button_text']:
+            if btn['url'] == None:
+                break
+        else:
+            pushes = await db.fetch_channel_pushes(msg['channel_id'])
+            await asyncio.sleep(30)
+            await send_start_message(pushes[push_index+1], chat_id, name, delete_kb=False, msg_type='push', push_index=push_index+1)
+
+
 
 async def start_command(update: types.ChatJoinRequest):
     _channel_id = -1
