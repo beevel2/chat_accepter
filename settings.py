@@ -9,7 +9,7 @@ import os
 
 TOKEN=''
 
-MONGO_DB = ''
+MONGO_DB = 'accepter_dev'
 MONGO_URI = f'mongodb://localhost:27017'
 
 API_ID = 2040
@@ -36,7 +36,9 @@ COLLECTION_USER = 'users'
 COLLECTION_ADMIN = 'admins'
 COLLECTION_MESSAGES = 'messages'
 COLLECTION_CHANNELS = 'channels'
+COLLECTION_PUSHES = 'pushes'
 
+allowed_updates = ['chat_member', 'my_chat_member', 'chat_join_request', 'callback_query', 'message']
 
 def _connect_to_db() -> AsyncIOMotorDatabase:
     client = AsyncIOMotorClient(MONGO_URI)

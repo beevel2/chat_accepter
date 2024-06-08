@@ -156,6 +156,8 @@ async def make_channel_menu_kb(channel_id: int, page: int):
 
                  InlineKeyboardButton(text='Задержка',
                                       callback_data=f'set_delay_{page}_{channel_id}'),
+                 InlineKeyboardButton(text='Отписка',
+                                      callback_data=f'unsub_settings_{channel_id}'),
                  InlineKeyboardButton(text='Удалить канал',
                                       callback_data=f'delete_channel_{page}_{channel_id}'),
                  InlineKeyboardButton(text='🔙 Назад',
@@ -236,3 +238,44 @@ async def message_delay_kb(channel_id: int, page: int, enum: str):
                                     callback_data=f'edit-delay-{key}-{page}-{channel_id}'))
     kb.row(InlineKeyboardButton(text='🔙 Назад', callback_data=f'channel_{page}_{channel_id}'))
     return kb
+
+
+async def make_pushes_kb(channel_id: int):
+    kb = InlineKeyboardMarkup(row_width=2)
+
+    kb.add(InlineKeyboardButton(text='Добавить', callback_data=f'add_push_{channel_id}'))
+
+    for i, _ in enumerate(await db.fetch_channel_pushes(channel_id)):
+        kb.add(InlineKeyboardButton(text=f'Сообщение {i+1}', callback_data=f'view_push_{channel_id}_{i}'),
+               InlineKeyboardButton(text='❌', callback_data=f'delete_push_{channel_id}_{i}'))
+
+    kb.add(InlineKeyboardButton(text='🔙 Назад', callback_data=f'channel_1_{channel_id}'))
+                 
+    return kb
+
+
+async def delete_push_confirm_kb(channel_id, push_id):
+    kb = InlineKeyboardMarkup(row_width=2)
+
+    kb.row(InlineKeyboardButton(text='Удалить', callback_data=f'confirm_push_deletion_{channel_id}_{push_id}'),
+           InlineKeyboardButton(text='Отмена', callback_data=f'unsub_settings_{channel_id}'))
+
+    return kb
+
+
+async def back_to_pushes_kb(channel_id):
+    kb = InlineKeyboardMarkup(row_width=1)
+    kb.add(InlineKeyboardButton(text='К меню отписки', callback_data=f'unsub_settings_{channel_id}'))
+
+    return kb
+
+
+async def user_push_kb(button_text, channel_id, push_index):
+    kb = InlineKeyboardMarkup(row_width=1)
+    for button in button_text:
+        if not button['url']:
+            kb.add(InlineKeyboardButton(text=button['text'], callback_data=f'next_push_{channel_id}_{push_index + 1}'))
+        else:
+            kb.add(InlineKeyboardButton(text=button['text'], url=button['url']))
+
+    return kb    

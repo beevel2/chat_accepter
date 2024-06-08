@@ -11,6 +11,9 @@ import re
 
 def setup_handlers(dp: Dispatcher):
     dp.register_chat_join_request_handler(h.start_command, state='*')
+    dp.register_chat_member_handler(h.unsub_handler)
+    dp.register_callback_query_handler(h.next_push_handler, lambda c: c.data.startswith('next_push_'), state='*')
+
 
     dp.register_my_chat_member_handler(h.banned_handler, chat_type='private')
 
@@ -35,6 +38,16 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(h_admin.approve_requests_get_id, content_types='text', state=[AppStates.STATE_APPROVE_REQUERSTS])
 
 
+    # Меню отписки
+    dp.register_callback_query_handler(h_admin.push_menu, lambda c: c.data.startswith('unsub_settings'), state='*')
+    dp.register_callback_query_handler(h_admin.append_push, lambda c: c.data.startswith('add_push_'), state='*')
+    dp.register_callback_query_handler(h_admin.delete_push, lambda c: c.data.startswith('delete_push_'), state='*')
+    dp.register_callback_query_handler(h_admin.delete_push_confirm, lambda c: c.data.startswith('confirm_push_deletion_'), state='*')
+    dp.register_callback_query_handler(h_admin.edit_push, lambda c: c.data.startswith('view_push_'), state='*')
+    dp.register_message_handler(h_admin.edit_push_get_data, content_types='any', state=[AppStates.STATE_GET_PUSH_DATA])
+    dp.register_message_handler(h_admin.edit_push_get_button, content_types='text', state=[AppStates.STATE_GET_PUSH_BUTTON])
+
+
     # dp.register_message_handler(h_admin.get_message_command, content_types=['any'], state=[AppStates.STATE_MESSAGE2_MESSAGE, AppStates.STATE_MESSAGE3_MESSAGE])
     # dp.register_message_handler(h_admin.get_buttons_command, state=[AppStates.STATE_MESSAGE_BUTTONS])
     
@@ -55,8 +68,14 @@ def setup_handlers(dp: Dispatcher):
     dp.register_callback_query_handler(h_admin.add_channel_step4_command, lambda c: c.data.startswith('approve_'), state=[AppStates.STATE_ADD_CHANNEL_APPROVE])
 
     # Изменение сообщений
-    dp.register_callback_query_handler(h_admin.edit_messages_menu,
+    # comment to enable userbot
+    dp.register_callback_query_handler(h_admin.edit_messages_command,
                                        lambda c: c.data.startswith('edit_messages_'))
+
+    # uncomment to enable userbot
+    # dp.register_callback_query_handler(h_admin.edit_messages_menu,
+    #                                    lambda c: c.data.startswith('edit_messages_'))
+
     dp.register_callback_query_handler(h_admin.edit_messages_command,
                                        lambda c: c.data.startswith('bot_edit_messages_') or c.data.startswith('userbot_edit_messages_'),
                                        state='*')

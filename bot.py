@@ -2,7 +2,7 @@ from aiogram.utils import executor
 
 from handlers import setup_handlers
 from handlers.default import client_pool
-from settings import dp
+from settings import dp, allowed_updates
 import middleware
 from scheduler import scheduler, add_scheduler_tasks
 
@@ -20,4 +20,4 @@ if __name__ == '__main__':
     dp.middleware.setup(middleware.UserIsAdminMiddleware())
     dp.middleware.setup(middleware.AlbumMiddleware())
 
-    executor.start_polling(dp, on_startup=add_scheduler_tasks, on_shutdown=on_shutdown)
+    executor.start_polling(dp, allowed_updates=allowed_updates, on_startup=add_scheduler_tasks, on_shutdown=on_shutdown)

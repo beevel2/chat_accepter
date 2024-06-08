@@ -17,6 +17,7 @@ import scheduler
 from pyrogram import Client
 from pyrogram.errors import SessionPasswordNeeded, PasswordHashInvalid
 from utils import download_file
+import utils
 
 import logging
 
@@ -1168,11 +1169,17 @@ async def set_delay_menu(
     query: types.CallbackQuery,
     state: FSMContext
     ):
-    await query.answer()
 
     callback_data = query.data.split('_')
     page = callback_data[-2]
     channel_id = callback_data[-1]
+    
+    # comment to enable userbot
+    query.data = f'delay_bot_{page}_{channel_id}'
+    await set_delay_pick_message(query, state)
+    return
+    #########
+    await query.answer()
 
     markup = await kb.delay_menu(channel_id, page)
     await query.message.edit_text(text='Для кого редактировать задержку?', 
@@ -1251,3 +1258,180 @@ async def delete_channel_confirm(query: types.CallbackQuery, state: FSMContext):
     await db.delete_channel(channel_id)
     query.data = f'list_channel_page_{page}'
     await my_channels_page(query, state)
+
+
+async def push_menu(query: types.CallbackQuery, state: FSMContext):
+    await query.answer()
+    await state.finish()
+    channel_id = int(query.data.split('_')[-1])
+
+    markup = await kb.make_pushes_kb(channel_id)
+    await query.message.edit_text(text='Вы можете настроить автоматическую реакцию бота на отписку пользователя от канала, для этого добавьте сообщения ниже',
+                                  reply_markup=markup)
+
+
+
+async def append_push(query: types.CallbackQuery):
+    await query.answer()
+    channel_id = int(query.data.split('_')[-1])
+    
+    await db.add_empty_push(channel_id)
+
+    markup = await kb.make_pushes_kb(channel_id)
+    await query.message.edit_text(text='Вы можете настроить автоматическую реакцию бота на отписку пользователя от канала, для этого добавьте сообщения ниже',
+                                  reply_markup=markup)
+
+
+async def delete_push(query: types.CallbackQuery):
+    await query.answer()
+
+    push_id = int(query.data.split('_')[-1])
+    channel_id = int(query.data.split('_')[-2])
+
+    data = await db.fetch_channel_pushes(channel_id)
+
+    if not (utils.check_message_has_data(data[push_id], ['channel_id', '_id'])):
+
+        await db.delete_push(data[push_id]['_id'])
+
+        markup = await kb.make_pushes_kb(channel_id)
+        await query.message.edit_text(text='Вы можете настроить автоматическую реакцию бота на отписку пользователя от канала, для этого добавьте сообщения ниже',
+                                      reply_markup=markup)
+
+    else:
+        markup = await kb.delete_push_confirm_kb(channel_id, push_id)
+        await query.message.edit_text(text=f'Вы уверены что хотите удалить сообщение {push_id+1}',
+                                      reply_markup=markup)
+
+
+
+async def delete_push_confirm(query: types.CallbackQuery):
+    await query.answer()
+
+    push_id = int(query.data.split('_')[-1])
+    channel_id = int(query.data.split('_')[-2])
+
+    data = await db.fetch_channel_pushes(channel_id)
+    await db.delete_push(data[push_id]['_id'])
+
+    markup = await kb.make_pushes_kb(channel_id)
+    await query.message.edit_text(text='Вы можете настроить автоматическую реакцию бота на отписку пользователя от канала, для этого добавьте сообщения ниже',
+                                  reply_markup=markup)
+
+
+async def edit_push(query: types.CallbackQuery, state: FSMContext):
+    await query.answer()
+    await state.set_state(AppStates.STATE_GET_PUSH_DATA)
+
+    push_id = int(query.data.split('_')[-1])
+    channel_id = int(query.data.split('_')[-2])
+
+    await state.update_data(channel_id=channel_id,
+                            push_id=push_id)
+
+    markup = await kb.back_to_pushes_kb(channel_id)
+    await query.message.edit_text(text='Введите сообщение для пуша',
+                                  reply_markup=markup)
+
+
+async def edit_push_get_data(
+        message: types.Message,
+        state: FSMContext,
+        is_admin: bool,
+        album: Optional[List[types.Message]] = None
+):
+    if not is_admin:
+        return
+
+    data = {
+        'text': '',
+        'photos': [],
+        'video_id': None,
+        'video_note_id': None,
+        'animation_id': None,
+        'voice_id': None,
+        'button_text': ''
+    }
+
+    try:
+        data['text'] = message.html_text
+    except Exception:
+        pass
+    if album:
+        data['photos'] = [f'{p.photo[-1].file_id}.jpg' for p in album if p.photo]
+        if len(data['photos']) == 0 and len(album) == 1:
+
+            if album[0].content_type == 'animation':
+                data['animation_id'] = album[0].animation.file_id
+                await download_file(data['animation_id'])
+
+            elif album[0].content_type == 'video':
+                data['video_id'] = album[0].video.file_id
+                await download_file(data['video_id'])
+
+            elif album[0].content_type == 'video_note':
+                data['video_note_id'] = album[0].video_note.file_id
+                await download_file(data['video_note_id'])
+
+            elif album[0].content_type == 'voice':
+                data['voice_id'] = album[0].voice.file_id
+                data['voice_duration'] = album[0].voice.duration
+                await download_file(data['voice_id'], voice=True)
+
+        if len(data['photos']) > 0:
+            for _photo in data['photos']:
+                await download_file(_photo)
+
+    elif message.video:
+        data['video_id'] = message.video.file_id
+        await download_file(data['video_id'])
+
+    elif message.video_note:
+        data['video_note_id'] = message.video_note.file_id
+        await download_file(data['video_note_id'])
+
+    elif message.animation:
+        data['animation'] = message.animation.file_id
+        await download_file(data['animation'])
+
+    elif message.voice:
+        data['voice_id'] = message.voice.file_id
+        data['voice_duration'] = message.voice.duration
+        await download_file(data['voice_id'], voice=True)
+
+    await state.update_data({'data': data})
+    await state.set_state(AppStates.STATE_GET_PUSH_BUTTON)
+    state_data = await state.get_data()
+
+    markup = await kb.back_to_pushes_kb(state_data['channel_id'])
+    await bot.send_message(chat_id=message.from_user.id,
+                           text="""Введите кнопки
+
+Формат ввода:
+1. Переходи - https://t.me/durov 
+2. Далее 
+
+Кнопка 2 ведет пользователя к следующему сообщению. Допустим ввод списком.""",
+                           reply_markup=markup,
+                           disable_web_page_preview=True)
+
+
+async def edit_push_get_button(message: types.Message, state: FSMContext):
+    data = []
+    for button_data in message.text.split('\n'):
+        if len(button_data.split(' - ')) == 1:
+            data.append({'text': button_data, 'url': None})
+        elif len(button_data.split(' - ')) == 2:
+            data.append({'text': button_data.split(' - ')[0], 'url': button_data.split(' - ')[1]})
+
+    state_data = await state.get_data()
+    await state.finish()
+    state_data['data']['button_text'] = data
+
+    push = (await db.fetch_channel_pushes(state_data['channel_id']))[state_data['push_id']]
+    await db.update_push(push['_id'], state_data['data'])
+
+    markup = await kb.back_to_pushes_kb(state_data['channel_id'])
+    await bot.send_message(chat_id=message.from_user.id,
+                           text='Сообщение успешно изменено!',
+                           reply_markup=markup)
