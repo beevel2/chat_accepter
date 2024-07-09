@@ -20,14 +20,19 @@ import io
 
 client_pool = []
 
-async def send_start_message(msg, chat_id, name, delete_kb=False, msg_type='default', push_index=None):
+async def send_start_message(msg, chat_id, user_record, delete_kb=False, msg_type='default', push_index=None):
     if delete_kb:
         _kb = kb.ReplyKeyboardRemove()
     elif msg_type == 'default':
         _kb = kb.kb_mass_send(msg['buttons'])
     elif msg_type == 'push':
         _kb = await kb.user_push_kb(msg['data']['button_text'], msg['channel_id'], push_index)
-    _text = replace_in_message(msg['data']['text'], 'USER', name) 
+    
+    if msg['data']['text']:
+        _text = msg['data']['text'].replace('[NAME]', user_record['first_name']).replace('[SURNAME]', user_record['last_name']).replace('[USERNAME]', user_record['username']) 
+    else:
+        _text = ''
+
     if msg['data']['video_note_id']:
         await bot.send_video_note(chat_id=chat_id, video_note=msg['data']['video_note_id'].split('.')[0], reply_markup=_kb)
     elif msg['data']['photos'] and len(msg['data']['photos']) == 1:
@@ -69,7 +74,7 @@ async def send_start_message(msg, chat_id, name, delete_kb=False, msg_type='defa
         else:
             pushes = await db.fetch_channel_pushes(msg['channel_id'])
             await asyncio.sleep(30)
-            await send_start_message(pushes[push_index+1], chat_id, name, delete_kb=False, msg_type='push', push_index=push_index+1)
+            await send_start_message(pushes[push_index+1], chat_id, user_record, delete_kb=False, msg_type='push', push_index=push_index+1)
 
 
 
@@ -91,6 +96,9 @@ async def start_command(update: types.ChatJoinRequest):
             channel_id=_channel_id,
         )
         await db.create_user(user)
+    else:
+        user = user_in_db
+
     name = update.from_user.full_name
     if not name:
         name = update.from_user.username
@@ -113,15 +121,15 @@ async def start_command(update: types.ChatJoinRequest):
         # asyncio.create_task(send_userbot_messages(update.from_user.id, _channel, name))
         if msg1:
             await asyncio.sleep(msg1['delay'])
-            await send_start_message(msg1, update.from_user.id, name)
+            await send_start_message(msg1, update.from_user.id, user)
         if msg2:
             await asyncio.sleep(msg2['delay']) 
-            await send_start_message(msg2, update.from_user.id, name)
+            await send_start_message(msg2, update.from_user.id, user)
         if msg3:
             await asyncio.sleep(msg3['delay'])
             usr = await db.get_user_by_tg_id(update.from_user.id)
             if not usr.get('notIsRobot'):
-                await send_start_message(msg3, update.from_user.id, name)
+                await send_start_message(msg3, update.from_user.id, user)
 
 
 async def user_send_message_command(message: types.Message):
@@ -135,25 +143,22 @@ async def user_send_message_command(message: types.Message):
         msg6 = channel.get('msg_6')
         msg7 = channel.get('msg_7')
 
-        name = message.from_user.full_name
-        if not name:
-            name = message.from_user.username
-
         if msg4:
             await asyncio.sleep(msg4['delay'])
-            await send_start_message(msg4, message.from_user.id, name, delete_kb=True)
+            await send_start_message(msg4, message.from_user.id, user, delete_kb=True)
         if msg5:
             await asyncio.sleep(msg5['delay'])
-            await send_start_message(msg5, message.from_user.id, name)
+            await send_start_message(msg5, message.from_user.id, user)
         if msg6:
             await asyncio.sleep(msg6['delay'])
-            await send_start_message(msg6, message.from_user.id, name)
+            await send_start_message(msg6, message.from_user.id, user)
         if msg7:
             await asyncio.sleep(msg7['delay'])
-            await send_start_message(msg7, message.from_user.id, name)
+            await send_start_message(msg7, message.from_user.id, user)
 
 
 async def send_userbot_messages(user_id: int, channel, name):
+    return
     global client_pool
     account = await db.fetch_account_by_id(int(channel['channel_id']))
     if not account:
@@ -203,7 +208,7 @@ async def send_userbot_messages(user_id: int, channel, name):
 
 
 async def send_admin_message(msg, chat_id, name, app, delete_kb=False):
-    _text = replace_in_message(msg['data']['text'], 'USER', name) 
+    _text = msg['data']['text'].replace('USER', name) 
     if msg['data']['video_note_id']:
         await app.send_video_note(chat_id=chat_id, video_note=Path(settings.DOWNLOAD_PATH, msg['data']['video_note_id']))
     elif msg['data']['photos'] and len(msg['data']['photos']) == 1:
@@ -252,21 +257,24 @@ async def unsub_handler(chat_member: types.ChatMemberUpdated):
     user_id = chat_member.from_user.id
     channel_tg_id = chat_member.chat.id
 
+    user = await db.get_user(query.from_user.id, int(channel_tg_id))
+
     channel = await db.get_channel_by_tg_id(channel_tg_id)
     pushes = await db.fetch_channel_pushes(channel['channel_id'])
 
-    await send_start_message(pushes[0], user_id, chat_member.from_user.full_name, delete_kb=False, msg_type='push', push_index=0)
+    await send_start_message(pushes[0], user_id, user, delete_kb=False, msg_type='push', push_index=0)
 
 
 async def next_push_handler(query: types.CallbackQuery):
     await query.answer()
-
     channel_id = int(query.data.split('_')[-2])
     push_index = int(query.data.split('_')[-1])
+
+    user = await db.get_user(query.from_user.id, int(channel_id))
 
     pushes = await db.fetch_channel_pushes(channel_id)
 
     try:
-        await send_start_message(pushes[push_index], query.from_user.id, query.from_user.full_name, delete_kb=False, msg_type='push', push_index=push_index)
+        await send_start_message(pushes[push_index], query.from_user.id, user, delete_kb=False, msg_type='push', push_index=push_index)
     except IndexError:
         print(f'Ran out of pushes on channel {channel_id} at push_index={push_index}')
