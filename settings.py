@@ -9,14 +9,14 @@ import os
 
 TOKEN=''
 
-MONGO_DB = 'accepter_dev'
-MONGO_URI = f'mongodb://localhost:27017'
+MONGO_DB = ''
+MONGO_URI = f''
 
 API_ID = 2040
 API_HASH = 'b18441a1ff607e10a989891a5462e627'
 DEVICE_MODEL = 'PC 64bit'
 SYSTEM_VERSION = 'Windows 7'
-APP_VERSION = '1.9.1'
+APP_VERSION = '4.11.6'
 LANG_CODE = 'en'
 SYSTEM_LANG_CODE = 'en-US'
 LANG_PACK = 'tdesktop'
@@ -50,4 +50,4 @@ db_connection = _connect_to_db()
 
 
 bot = Bot(token=TOKEN)
-dp = Dispatcher(bot, storage=MemoryStorage())
+    
