@@ -951,6 +951,7 @@ async def approve_requests_get_id(
     added = 0
     await db.purge_pending(channel['channel_id'])
     for user_id in users:
+        await asyncio.sleep(0.04)
         try:
             success = await bot.approve_chat_join_request(chat_id=channel['tg_id'], user_id=user_id)
             if success is True:
@@ -1110,6 +1111,7 @@ async def approve_requests(query: types.CallbackQuery, state: FSMContext):
     added = 0
     await db.purge_pending(channel['channel_id'])
     for user_id in users:
+        await asyncio.sleep(0.04)
         try:
             success = await bot.approve_chat_join_request(chat_id=channel['tg_id'], user_id=user_id)
             if success is True:
