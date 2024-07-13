@@ -50,4 +50,4 @@ db_connection = _connect_to_db()
 
 
 bot = Bot(token=TOKEN)
-    
+dp = Dispatcher(bot, storage=MemoryStorage())
