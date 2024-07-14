@@ -95,9 +95,9 @@ async def start_command(update: types.ChatJoinRequest):
             tg_id=update.from_user.id,
             channel_id=_channel_id,
         )
-        user = await db.create_user(user)
-    else:
-        user = user_in_db
+        await db.create_user(user)
+    
+    user = await db.get_user(update.from_user.id, _channel_id)
 
     name = update.from_user.full_name
     if not name:
