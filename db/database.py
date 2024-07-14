@@ -14,6 +14,7 @@ COLLECTION_SETTINGS = 'settings'
 async def create_user(user: models.UserModel):
     col = db_connection[COLLECTION_USER]
     await col.insert_one(user.dict())
+    return await col.find_one({user.dict()})
 
 
 async def update_user_not_is_robot(tg_id: int):
