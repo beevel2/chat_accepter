@@ -95,7 +95,7 @@ async def start_command(update: types.ChatJoinRequest):
             tg_id=update.from_user.id,
             channel_id=_channel_id,
         )
-        await db.create_user(user)
+        user = await db.create_user(user)
     else:
         user = user_in_db
 
@@ -144,7 +144,7 @@ async def user_send_message_command(message: types.Message):
         msg7 = channel.get('msg_7')
 
         if msg4:
-            await asyncio.sleep(msg4['delay'])
+            await asyncio.sleep(msg4['delay'])q
             await send_start_message(msg4, message.from_user.id, user, delete_kb=True)
         if msg5:
             await asyncio.sleep(msg5['delay'])
