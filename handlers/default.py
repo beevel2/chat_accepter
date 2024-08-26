@@ -35,11 +35,18 @@ async def send_start_message(msg, chat_id, user_record, delete_kb=False, msg_typ
 
     if msg['data']['video_note_id']:
         await bot.send_video_note(chat_id=chat_id, video_note=msg['data']['video_note_id'].split('.')[0], reply_markup=_kb)
-    elif msg['data']['photos'] and len(msg['data']['photos']) == 1:
+    elif msg['data']['photos'] and len(msg['data']['photos']) == 1 and not msg['data']['video_id']:
         if _text:
             await bot.send_photo(chat_id=chat_id, photo=msg['data']['photos'][0].split('.')[0], caption=_text, parse_mode=types.ParseMode.HTML, reply_markup=_kb)
         else:
             await bot.send_photo(chat_id=chat_id, photo=msg['data']['photos'][0].split('.')[0], parse_mode=types.ParseMode.HTML, reply_markup=_kb)
+    elif msg['data']['video_id'] and not msg['data']['photos']:
+        if _text:
+            await bot.send_video(chat_id=chat_id, video=msg['data']['video_id'], parse_mode=types.ParseMode.HTML, caption=_text, reply_markup=_kb)
+        else:
+            await bot.send_video(chat_id=chat_id, video=msg['data']['video_id'], parse_mode=types.ParseMode.HTML, reply_markup=_kb)
+
+
     elif msg['data']['photos'] or msg['data']['video_id']:
         media = types.MediaGroup()
         if msg['data']['photos']:
