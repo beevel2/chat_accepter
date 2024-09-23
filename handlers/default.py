@@ -264,7 +264,7 @@ async def unsub_handler(chat_member: types.ChatMemberUpdated):
     user_id = chat_member.from_user.id
     channel_tg_id = chat_member.chat.id
 
-    user = await db.get_user(query.from_user.id, int(channel_tg_id))
+    user = await db.get_user(user_id, int(channel_tg_id))
 
     channel = await db.get_channel_by_tg_id(channel_tg_id)
     pushes = await db.fetch_channel_pushes(channel['channel_id'])
