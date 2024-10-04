@@ -5,7 +5,11 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from pathlib import Path
 
 from motor.motor_asyncio import (AsyncIOMotorClient, AsyncIOMotorDatabase)
+from dotenv import load_dotenv
 import os
+
+
+load_dotenv('.env')
 
 TOKEN=os.environ.get('TOKEN')
 
