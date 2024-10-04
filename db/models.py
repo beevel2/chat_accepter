@@ -1,8 +1,8 @@
 from typing import Optional, List
 
-from datetime import datetime
+from datetime import datetime, timezone
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class UserModel(BaseModel):
@@ -10,7 +10,7 @@ class UserModel(BaseModel):
     last_name: str
     username: str
     tg_id: int
-    date_registration: datetime = datetime.now()
+    date_registration: datetime = Field(default_factory=datetime.now(tz=timezone.utc))
     channel_id: int
     notIsRobot: bool = False
     banned: bool = False
