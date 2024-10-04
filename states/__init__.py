@@ -43,3 +43,7 @@ class AppStates(Helper):
 
     STATE_GET_PUSH_DATA = Item()
     STATE_GET_PUSH_BUTTON = Item()
+
+    STATE_ADD_LEAD = Item()
+
+    STATE_LEAD_STATS = Item()

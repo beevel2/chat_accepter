@@ -1,12 +1,18 @@
 from aiogram import Dispatcher
 from aiogram.dispatcher.filters import Text
+from aiogram_calendar import simple_cal_callback
+
 
 import handlers.default as h
 import handlers.admin as h_admin
+import handlers.manager as h_manager
+
+import filters
 
 from states import AppStates
 
 import re
+
 
 
 def setup_handlers(dp: Dispatcher):
@@ -17,9 +23,24 @@ def setup_handlers(dp: Dispatcher):
 
     dp.register_my_chat_member_handler(h.banned_handler, chat_type='private')
 
-    dp.register_message_handler(h_admin.start_command, commands=['start'], state='*')
+    dp.register_message_handler(h_admin.start_command, filters.is_admin_filter, commands=['start'], state='*')
+
+    dp.register_message_handler(h_manager.start, filters.is_manager_filter, commands='start', state='*')
 
     dp.register_message_handler(h_admin.cancel, Text('Отмена'))
+
+
+    # Lead reg
+    dp.register_message_handler(h_manager.add_lead_menu, filters.is_manager_filter, text='Записать лид', state='*')
+    dp.register_message_handler(h_manager.add_lead_froward_handler, filters.is_manager_filter, lambda m: bool(m.forward_from), state=AppStates.STATE_ADD_LEAD)
+    dp.register_message_handler(h_manager.add_lead_id_handler, filters.is_manager_filter, content_types='text', state=AppStates.STATE_ADD_LEAD)
+    dp.register_callback_query_handler(h_manager.add_lead_anyway, filters.is_manager_filter, lambda c: c.data.startswith('add_lead_'), state='*')
+
+    # Lead stats
+    dp.register_message_handler(h_manager.stats_menu, text='Статистика', state='*')
+    dp.register_callback_query_handler(h_manager.stats_calendar_entry, lambda c: c.data == 'lead_stats_to_calendar', state='*')
+    dp.register_callback_query_handler(h_manager.process_stats_calendar, simple_cal_callback.filter(), state=AppStates.STATE_LEAD_STATS)
+
 
     dp.register_callback_query_handler(h_admin.add_account_step1_command,
                                 lambda c: c.data.startswith('tie_account_'))

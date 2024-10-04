@@ -17,9 +17,17 @@ class UserIsAdminMiddleware(BaseMiddleware):
     
     async def on_process_message(self, message: types.Message, data: dict):
         data['is_admin'] = False
+        data['is_manager'] = False
+
+        manager = await db.get_manager_by_tg_id(message.from_user.id)
+        if manager:
+            data['is_manager'] = True
+
         admin = await db.get_admin_by_tg_id(message.from_user.id)
         if admin:
             data['is_admin'] = True
+            data['is_manager'] = True
+            
         return
 
 

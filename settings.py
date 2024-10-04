@@ -16,6 +16,9 @@ TOKEN=os.environ.get('TOKEN')
 MONGO_DB = os.environ.get('MONGO_DB')
 MONGO_URI = os.environ.get('MONGO_URI')
 
+# Numeric timezone offset. For example 3 is Moscow, 0 is UTC, and -2 is somewhere in Brazil... 
+TIMEZONE_OFFSET = 3 
+
 API_ID = 2040
 API_HASH = 'b18441a1ff607e10a989891a5462e627'
 DEVICE_MODEL = 'PC 64bit'
@@ -42,7 +45,7 @@ COLLECTION_MESSAGES = 'messages'
 COLLECTION_CHANNELS = 'channels'
 COLLECTION_PUSHES = 'pushes'
 COLLECTION_MANAGERS = 'managers'
-
+COLLECTION_LEADS = 'leads'
 
 allowed_updates = ['chat_member', 'my_chat_member', 'chat_join_request', 'callback_query', 'message']
 

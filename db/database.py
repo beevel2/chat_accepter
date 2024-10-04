@@ -1,11 +1,11 @@
+from datetime import datetime, timezone, timedelta
+
 import settings
-from settings import db_connection, COLLECTION_USER, COLLECTION_MESSAGES, COLLECTION_ADMIN, COLLECTION_CHANNELS, COLLECTION_ACCOUNTS, PYROGRAM_SESSION_PATH
+from settings import db_connection, COLLECTION_USER, COLLECTION_MESSAGES, COLLECTION_ADMIN, COLLECTION_CHANNELS, COLLECTION_ACCOUNTS, PYROGRAM_SESSION_PATH, COLLECTION_MANAGERS, COLLECTION_LEADS
 import db.models as models
 import os
 
 from bson.objectid import ObjectId
-
-
 
 
 COLLECTION_SETTINGS = 'settings'
@@ -44,8 +44,18 @@ async def get_user_by_tg_id(tg_id: int):
     return await col.find_one(filter={'tg_id': tg_id})
 
 
+async def fetch_lead_by_user_id(user_id: int):
+    col = db_connection[COLLECTION_LEADS]
+    return await col.find_one(filter={'user_id': user_id})
+
+
 async def get_admin_by_tg_id(tg_id: int):
     col = db_connection[COLLECTION_ADMIN]
+    return await col.find_one(filter={'tg_id': tg_id})
+
+
+async def get_manager_by_tg_id(tg_id: int):
+    col = db_connection[COLLECTION_MANAGERS]
     return await col.find_one(filter={'tg_id': tg_id})
 
 
@@ -345,5 +355,55 @@ async def update_push(_id, data):
 
 async def fetch_channel_user(channel_id, user_id):
     col = db_connection[settings.COLLECTION_USER]
-
     return (await col.find_one({'tg_id': int(user_id), 'channel_id': int(channel_id)}))
+
+
+async def add_lead(user_id, manager_id, is_first = True):
+    col = db_connection[COLLECTION_LEADS]
+    user = await get_user_by_tg_id(user_id)
+
+    data = models.LeadModel(
+        user_id=user_id,
+        manager_id=manager_id,
+        is_first=is_first,
+        date_registration=user['date_registration'].replace(tzinfo=timezone.utc),
+        time_diff_seconds=int((datetime.now(tz=timezone.utc) - user['date_registration'].replace(tzinfo=timezone.utc)).total_seconds())
+    )
+
+    await col.insert_one(data.dict())
+
+
+async def get_lead_avg_time_diff(start_from=None, end_with=None):
+    col = db_connection[COLLECTION_LEADS]
+
+    pipeline = []
+
+    filter = {'$match': {
+        'is_first': True
+    }}
+
+    if start_from and end_with:
+        filter['$match']['lead_time'] = {'$gte': start_from, '$lt': end_with}
+
+    pipeline.append(filter)
+    pipeline.append({
+            '$group': {
+                '_id': None,
+                'averageValue': {'$avg': '$time_diff_seconds'}
+            }
+        })
+
+    async with col.aggregate(pipeline) as cursor:
+        document = await cursor.to_list(length=1)
+        if document:
+            average_value = document[0]['averageValue']
+        else:
+            average_value = 0
+
+    return average_value
+
+
+async def fetch_lead_count(filter={}):
+    col = db_connection[COLLECTION_LEADS]
+
+    return await col.count_documents(filter)
