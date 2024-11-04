@@ -287,9 +287,13 @@ def add_lead_again_kb(user_id):
     kb = InlineKeyboardMarkup()
 
     kb.add(InlineKeyboardButton(text='Зафиксировать', callback_data=f'add_lead_{user_id}'))
-
+    kb.add(InlineKeyboardButton(text='Отмена', callback_data='cancel'))
     return kb
 
 
 lead_stats_kb = InlineKeyboardMarkup()
 lead_stats_kb.add(InlineKeyboardButton(text='Выбрать дату', callback_data='lead_stats_to_calendar'))
+
+
+kb_cancel_inline = InlineKeyboardMarkup(row_width=1)
+kb_cancel_inline.add(InlineKeyboardButton(text='Отмена', callback_data='cancel'))

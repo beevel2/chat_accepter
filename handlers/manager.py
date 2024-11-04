@@ -23,12 +23,22 @@ async def start(message: types.Message, state: FSMContext):
                            reply_markup=keyboards.kb_manager)
 
 
+async def start_query(query: types.CallbackQuery, state: FSMContext):
+    await state.finish()
+    await query.answer()
+
+    await bot.send_message(chat_id=query.from_user.id,
+                           text='Меню менеджера',
+                           reply_markup=keyboards.kb_manager)
+
+
 async def add_lead_menu(message: types.Message, state: FSMContext):
     await state.finish()
     await state.set_state(AppStates.STATE_ADD_LEAD)
 
     await bot.send_message(chat_id=message.from_user.id,
-                           text='Отправьте JSON-id пользователя или перешлите сообщение от него')
+                           text='Отправьте JSON-id пользователя или перешлите сообщение от него',
+                           reply_markup=keyboards.kb_cancel_inline)
 
 
 async def add_lead_froward_handler(message: types.Message, state: FSMContext):
@@ -37,10 +47,10 @@ async def add_lead_froward_handler(message: types.Message, state: FSMContext):
     match status:
         case 0:
             await bot.send_message(chat_id=message.from_user.id,
-                                   text=f'✅ Лид по пользователю {user["first_name"]} {user["last_name"] if user["last_name"] else ""} успешно добавлен. Отправьте еще один id/пересланное сообщение')
+                                   text=f'✅ Лид по пользователю {user["first_name"]} {user["last_name"] if user["last_name"] else ""} успешно добавлен. Отправьте еще один id/пересланное сообщение', reply_markup=keyboards.kb_cancel_inline)
         case 1:
             await bot.send_message(chat_id=message.from_user.id,
-                                   text='Пользователь никогда не подписывался на данный канал, поэтому лид не может быть зафиксирован. Отправьте другой id/пересланное сообщение')
+                                   text='Пользователь никогда не подписывался на данный канал, поэтому лид не может быть зафиксирован. Отправьте другой id/пересланное сообщение', reply_markup=keyboards.kb_cancel_inline)
         case 2:
             await bot.send_message(chat_id=message.from_user.id,
                                    text=f'По пользователю {user["first_name"]} {user["last_name"] if user["last_name"] else ""} уже существует лид. Если вы всё равно хотите его зафиксировать - нажмите кнопку ниже. Вы так же можете отправить еще один id/пересланное сообщение',
@@ -52,7 +62,7 @@ async def add_lead_id_handler(message: types.Message, state: FSMContext):
         user_id = int(message.text.strip())
     except:
         await bot.send_message(chat_id=message.from_user.id,
-                               text='Сообщение которое вы отправили не содержит id и не является пересланным. Отправьте другое')
+                               text='Сообщение которое вы отправили не содержит id и не является пересланным. Отправьте другое', reply_markup=keyboards.kb_cancel_inline)
         return
 
     status, user = await digest_lead_input(int(user_id), message.from_user.id)
@@ -60,10 +70,10 @@ async def add_lead_id_handler(message: types.Message, state: FSMContext):
     match status:
         case 0:
             await bot.send_message(chat_id=message.from_user.id,
-                                   text=f'✅ Лид по пользователю {user["first_name"]} {user["last_name"] if user["last_name"] else ""} успешно добавлен. Отправьте еще один id/пересланное сообщение')
+                                   text=f'✅ Лид по пользователю {user["first_name"]} {user["last_name"] if user["last_name"] else ""} успешно добавлен. Отправьте еще один id/пересланное сообщение', reply_markup=keyboards.kb_cancel_inline)
         case 1:
             await bot.send_message(chat_id=message.from_user.id,
-                                   text='Пользователь никогда не подписывался на данный канал, поэтому лид не может быть зафиксирован. Отправьте другой id/пересланное сообщение')
+                                   text='Пользователь никогда не подписывался на данный канал, поэтому лид не может быть зафиксирован. Отправьте другой id/пересланное сообщение', reply_markup=keyboards.kb_cancel_inline)
         case 2:
             await bot.send_message(chat_id=message.from_user.id,
                                    text='По данному пользователю уже существует лид. Если вы всё равно хотите его зафиксировать - нажмите кнопку ниже. Вы так же можете отправить еще один id/пересланное сообщение',
@@ -90,7 +100,7 @@ async def add_lead_anyway(query: types.CallbackQuery, state: FSMContext):
 
     await db.add_lead(user_id=int(query.data.split('_')[-1]), manager_id=query.from_user.id, is_first=False)
 
-    await query.message.edit_text('Лид зафиксирован. Вы можете отправить еще одного пользователя', reply_markup=None)
+    await query.message.edit_text('Лид зафиксирован. Вы можете отправить еще одного пользователя', reply_markup=keybo, reply_markup=Noneards.kb_cancel_inline)
 
 
 async def stats_menu(message: types.Message, state: FSMContext):

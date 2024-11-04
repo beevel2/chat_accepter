@@ -29,15 +29,29 @@ def setup_handlers(dp: Dispatcher):
 
     dp.register_message_handler(h_admin.cancel, Text('Отмена'))
 
+    dp.register_callback_query_handler(h_admin.start_query, filters.is_admin_filter, lambda c: c.data in ['cancel', 'start', 'menu'], state='*')
+    dp.register_callback_query_handler(h_manager.start_query, filters.is_manager_filter, lambda c: c.data in ['cancel', 'start', 'menu'], state='*')
+
+
+    # entry points
+    dp.register_message_handler(h_manager.stats_menu, text='Статистика', state='*')
+    dp.register_message_handler(h_manager.add_lead_menu, filters.is_manager_filter, text='Записать лид', state='*')
+    dp.register_message_handler(h_admin.mass_send_btn_command, Text('Рассылка'))
+    dp.register_message_handler(h_admin.mass_send_command, Text(startswith='/mass_send_'))
+    dp.register_message_handler(h_admin.stats_command, commands=['stats'])
+    dp.register_message_handler(h_admin.add_channel_step1_command, Text('Добавить канал'))
+    dp.register_message_handler(h_admin.add_channel_step1_command, commands=['add_channel'])
+    dp.register_message_handler(h_admin.my_channels, Text('Мои каналы'), state='*')
+
 
     # Lead reg
-    dp.register_message_handler(h_manager.add_lead_menu, filters.is_manager_filter, text='Записать лид', state='*')
+    # dp.register_message_handler(h_manager.add_lead_menu, filters.is_manager_filter, text='Записать лид', state='*') -- hoisted
     dp.register_message_handler(h_manager.add_lead_froward_handler, filters.is_manager_filter, lambda m: bool(m.forward_from), state=AppStates.STATE_ADD_LEAD)
     dp.register_message_handler(h_manager.add_lead_id_handler, filters.is_manager_filter, content_types='text', state=AppStates.STATE_ADD_LEAD)
     dp.register_callback_query_handler(h_manager.add_lead_anyway, filters.is_manager_filter, lambda c: c.data.startswith('add_lead_'), state='*')
 
     # Lead stats
-    dp.register_message_handler(h_manager.stats_menu, text='Статистика', state='*')
+    # dp.register_message_handler(h_manager.stats_menu, text='Статистика', state='*') -- hoisted
     dp.register_callback_query_handler(h_manager.stats_calendar_entry, lambda c: c.data == 'lead_stats_to_calendar', state='*')
     dp.register_callback_query_handler(h_manager.process_stats_calendar, simple_cal_callback.filter(), state=AppStates.STATE_LEAD_STATS)
 
@@ -72,16 +86,16 @@ def setup_handlers(dp: Dispatcher):
     # dp.register_message_handler(h_admin.get_message_command, content_types=['any'], state=[AppStates.STATE_MESSAGE2_MESSAGE, AppStates.STATE_MESSAGE3_MESSAGE])
     # dp.register_message_handler(h_admin.get_buttons_command, state=[AppStates.STATE_MESSAGE_BUTTONS])
     
-    dp.register_message_handler(h_admin.mass_send_btn_command, Text('Рассылка'))
+    # dp.register_message_handler(h_admin.mass_send_btn_command, Text('Рассылка')) -- hoisted
     dp.register_message_handler(h_admin.mass_send_btn_step2_command, state=[AppStates.STATE_MASS_SEND_BTN], regexp=r"\d+")
 
-    dp.register_message_handler(h_admin.mass_send_command, Text(startswith='/mass_send_'))
+    # dp.register_message_handler(h_admin.mass_send_command, Text(startswith='/mass_send_')) -- hoisted
     dp.register_message_handler(h_admin.mass_send_process_command, content_types=['any'], state=[AppStates.STATE_MASS_SEND_BUTTONS, AppStates.STATE_MASS_SEND_MESSAGE])
-    dp.register_message_handler(h_admin.stats_command, commands=['stats'])
+    # dp.register_message_handler(h_admin.stats_command, commands=['stats']) -- hoisted
     
-    dp.register_message_handler(h_admin.add_channel_step1_command, Text('Добавить канал'))
+    # dp.register_message_handler(h_admin.add_channel_step1_command, Text('Добавить канал')) -- hoisted
 
-    dp.register_message_handler(h_admin.add_channel_step1_command, commands=['add_channel'])
+    # dp.register_message_handler(h_admin.add_channel_step1_command, commands=['add_channel']) -- hoisted
     dp.register_message_handler(h_admin.add_channel_step2_command, state=[AppStates.STATE_ADD_CHANNEL_ID])
     dp.register_message_handler(h_admin.add_channel_step3_command, state=[AppStates.STATE_ADD_CHANNEL_TG_ID])
     dp.register_message_handler(h_admin.add_channel_get_link_name, state=[AppStates.STATE_ADD_CHANNEL_LINK_NAME])
@@ -146,7 +160,7 @@ def setup_handlers(dp: Dispatcher):
     dp.register_message_handler(h_admin.set_delay_get_message,
                                 state=[AppStates.STATE_GET_DELAY])
 
-    dp.register_message_handler(h_admin.my_channels, Text('Мои каналы'), state='*')
+    # dp.register_message_handler(h_admin.my_channels, Text('Мои каналы'), state='*') -- hoisted
 
     dp.register_callback_query_handler(h_admin.del_account,
                                        lambda c: c.data.startswith('delete_account_'))

@@ -39,6 +39,16 @@ async def start_command(
     await message.answer('Выберите команду!', reply_markup=kb.kb_admin)
 
 
+async def start_query(
+    query: types.CallbackQuery,
+    state: FSMContext,
+):
+    await state.reset_state()
+    await state.reset_data()
+
+    await query.answer()
+    await bot.send_message(query.from_user.id, 'Выберите команду!', reply_markup=kb.kb_admin)
+
 
 async def add_account_step1_command(
     query: types.CallbackQuery,
