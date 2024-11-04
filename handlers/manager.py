@@ -100,7 +100,7 @@ async def add_lead_anyway(query: types.CallbackQuery, state: FSMContext):
 
     await db.add_lead(user_id=int(query.data.split('_')[-1]), manager_id=query.from_user.id, is_first=False)
 
-    await query.message.edit_text('Лид зафиксирован. Вы можете отправить еще одного пользователя', reply_markup=keybo, reply_markup=Noneards.kb_cancel_inline)
+    await query.message.edit_text('Лид зафиксирован. Вы можете отправить еще одного пользователя', reply_markup=Noneards.kb_cancel_inline)
 
 
 async def stats_menu(message: types.Message, state: FSMContext):
