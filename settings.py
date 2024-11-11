@@ -54,5 +54,5 @@ def _connect_to_db() -> AsyncIOMotorDatabase: # type: ignore
 db_connection = _connect_to_db()
 
 
-bot = Bot(token=TOKEN)
+bot = Bot(token=os.environ.get('TOKEN'))
 dp = Dispatcher(bot, storage=MemoryStorage())
