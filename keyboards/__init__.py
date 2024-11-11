@@ -43,26 +43,28 @@ kb_admin = ReplyKeyboardMarkup(
         [
             KeyboardButton('Добавить канал')
         ],
-        # [
-        #     KeyboardButton('Изменить сообщение')
-        # ],
+        [
+            KeyboardButton('Статистика')
+        ],
         [
             KeyboardButton('Рассылка')
         ],
-        # [
-        #     KeyboardButton('Изменить таймаут отправки сообщения')
-        # ],
-        # [
-        #     KeyboardButton('Редактировать сообщения')
-        # ],
-        # [
-        #     KeyboardButton('Приём заявок')
-        # ],
-        # [
-        #     KeyboardButton('Одобрить заявки')
-
-        # ]
+        [
+            KeyboardButton('Записать лид')
+        ],
     ], resize_keyboard=True
+)
+
+kb_manager = ReplyKeyboardMarkup(
+    [
+        [
+            KeyboardButton('Записать лид')
+        ],
+        [
+            KeyboardButton('Статистика')
+        ]
+    ],
+    resize_keyboard=True
 )
 
 kb_robot = ReplyKeyboardMarkup(
@@ -279,3 +281,19 @@ async def user_push_kb(button_text, channel_id, push_index):
             kb.add(InlineKeyboardButton(text=button['text'], url=button['url']))
 
     return kb    
+
+
+def add_lead_again_kb(user_id):
+    kb = InlineKeyboardMarkup()
+
+    kb.add(InlineKeyboardButton(text='Зафиксировать', callback_data=f'add_lead_{user_id}'))
+    kb.add(InlineKeyboardButton(text='Отмена', callback_data='cancel'))
+    return kb
+
+
+lead_stats_kb = InlineKeyboardMarkup()
+lead_stats_kb.add(InlineKeyboardButton(text='Выбрать дату', callback_data='lead_stats_to_calendar'))
+
+
+kb_cancel_inline = InlineKeyboardMarkup(row_width=1)
+kb_cancel_inline.add(InlineKeyboardButton(text='Отмена', callback_data='cancel'))

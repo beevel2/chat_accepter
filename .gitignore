@@ -165,3 +165,4 @@ settings.py
 settings.py
 sessions/
 files/
+.env

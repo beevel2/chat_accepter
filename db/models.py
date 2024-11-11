@@ -1,8 +1,12 @@
 from typing import Optional, List
 
-from datetime import datetime
+from datetime import datetime, timezone
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+def get_utc_time():
+    return datetime.now(tz=timezone.utc)
 
 
 class UserModel(BaseModel):
@@ -10,13 +14,28 @@ class UserModel(BaseModel):
     last_name: str
     username: str
     tg_id: int
-    date_registration: datetime = datetime.now()
+    date_registration: datetime = Field(default_factory=get_utc_time)
     channel_id: int
     notIsRobot: bool = False
     banned: bool = False
 
 
+class LeadModel(BaseModel):
+    user_id: int
+    manager_id: int
+
+    is_first: bool = True
+    
+    date_registration: datetime
+    lead_time: datetime = Field(default_factory=get_utc_time)
+    time_diff_seconds: int
+
+
 class AdminModel(BaseModel):
+    tg_id: int
+
+
+class ManagerModel(BaseModel):
     tg_id: int
 
 
