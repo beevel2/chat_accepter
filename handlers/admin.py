@@ -153,7 +153,7 @@ async def retie_account(
     state: FSMContext):
 
     await query.answer()
-    data = await satate.get_data()
+    data = await state.get_data()
     markup = data['markup']
     if query.data.endswith('no'):
         await state.reset_state()

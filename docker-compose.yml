@@ -1,0 +1,20 @@
+services:
+  app:
+    build: .
+    
+    env_file:
+      - ./.env
+    
+    volumes:
+      - ./files:/app/files:rw
+      - ./sessions:/app/sessions:rw
+    
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - MONGO_URI=${MONGO_URI}
+      - DB_NAME=${DB_NAME}
+    
+    restart: always
+    
+    logging:
+      driver: "journald"
