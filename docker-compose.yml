@@ -10,9 +10,9 @@ services:
       - ./sessions:/app/sessions:rw
     
     environment:
-      - BOT_TOKEN=${BOT_TOKEN}
+      - TOKEN=${TOKEN}
       - MONGO_URI=${MONGO_URI}
-      - DB_NAME=${DB_NAME}
+      - MONGO_DB=${MONGO_DB}
     
     restart: always
     
