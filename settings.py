@@ -9,8 +9,6 @@ from dotenv import load_dotenv
 import os
 
 
-TOKEN=os.environ.get('TOKEN')
-
 MONGO_DB = os.environ.get('MONGO_DB')
 MONGO_URI = os.environ.get('MONGO_URI')
 
