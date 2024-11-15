@@ -4,7 +4,7 @@ from handlers.default import send_start_message
 import db.database as db
 
 
-scheduler = AsyncIOScheduler()
+scheduler = AsyncIOScheduler({'apscheduler.timezone': 'Europe/Moscow'})
 
 
 async def send_mass_messages(data):
