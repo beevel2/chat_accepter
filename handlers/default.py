@@ -1,6 +1,8 @@
 import asyncio
 from pathlib import Path
 
+import logging
+
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
@@ -21,7 +23,10 @@ import io
 
 client_pool = []
 
+logger = logging.getLogger(__name__)
+
 async def send_start_message(msg, chat_id, user_record, delete_kb=False, msg_type='default', push_index=None):
+    logger.info(f'entered with params: msg={msg} | chat_id={chat_id} | user_record={user_record} | delete_kb={delete_kb} | msg_type={msg_type} | push_index={push_index}')
     if delete_kb:
         _kb = kb.ReplyKeyboardRemove()
     elif msg_type == 'default':
@@ -30,7 +35,10 @@ async def send_start_message(msg, chat_id, user_record, delete_kb=False, msg_typ
         _kb = await kb.user_push_kb(msg['data']['button_text'], msg['channel_id'], push_index)
     
     if msg['data']['text']:
-        _text = msg['data']['text'].replace('[NAME]', user_record['first_name']).replace('[SURNAME]', user_record['last_name']).replace('[USERNAME]', user_record['username']) 
+        if user_record:
+            _text = msg['data']['text'].replace('[NAME]', user_record['first_name']).replace('[SURNAME]', user_record['last_name']).replace('[USERNAME]', user_record['username']) 
+        else:
+            _text = msg['data']['text']
     else:
         _text = ''
 
@@ -265,9 +273,10 @@ async def unsub_handler(chat_member: types.ChatMemberUpdated):
     user_id = chat_member.from_user.id
     channel_tg_id = chat_member.chat.id
 
-    user = await db.get_user(user_id, int(channel_tg_id))
-
     channel = await db.get_channel_by_tg_id(channel_tg_id)
+
+    user = await db.get_user(user_id, int(channel['channel_id']))
+
     pushes = await db.fetch_channel_pushes(channel['channel_id'])
 
     await send_start_message(pushes[0], user_id, user, delete_kb=False, msg_type='push', push_index=0)
