@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from handlers.default import send_start_message
 import db.database as db
@@ -6,8 +7,11 @@ import db.database as db
 
 scheduler = AsyncIOScheduler({'apscheduler.timezone': 'Europe/Moscow'})
 
+logger = logging.getLogger(__name__)
+
 
 async def send_mass_messages(data):
+    logging.info(f'started send_mass_messages with data: {data}')    
     for user in data['users']:
         try:
             user_record = await db.fetch_channel_user(data['channel_db_id'], user)
