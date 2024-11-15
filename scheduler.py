@@ -17,7 +17,7 @@ async def send_mass_messages(data):
             user_record = await db.fetch_channel_user(data['channel_db_id'], user)
             await send_start_message(data['message'], user, user_record)
         except Exception as e:
-            print(f'MASS SEND CRON ERROR: {e}')
+            logger.exception(f'Error at send_mass_messages with data: {data}')
         await asyncio.sleep(0.5)
 
 async def add_scheduler_tasks(_ = None):
