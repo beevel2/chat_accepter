@@ -10,7 +10,8 @@ scheduler = AsyncIOScheduler({'apscheduler.timezone': 'Europe/Moscow'})
 async def send_mass_messages(data):
     for user in data['users']:
         try:
-            await send_start_message(data['message'], user, 'USERNAME')
+            user_record = await db.fetch_channel_user(data['channel_db_id'], user)
+            await send_start_message(data['message'], user, user_record)
         except Exception as e:
             print(f'MASS SEND CRON ERROR: {e}')
         await asyncio.sleep(0.5)

@@ -102,6 +102,7 @@ async def get_all_channels_id_and_user_id_mass_send():
             _users = await get_id_all_users(channel['channel_id'])
             res.append({
                 'channel_id': channel['tg_id'],
+                'channel_db_id': channel['channel_id'],
                 'message': channel['msg_mass_send'],
                 'hour': channel['msg_mass_send']['hour'],
                 'minutes': channel['msg_mass_send']['minutes'],
