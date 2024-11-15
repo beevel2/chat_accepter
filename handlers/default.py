@@ -28,6 +28,8 @@ logger = logging.getLogger(__name__)
 
 
 async def send_start_message(msg, chat_id, user_record=None, delete_kb=False, msg_type='default', push_index=None, live=True):
+    logger.info(f'entered with params: msg={msg} | chat_id={chat_id} | user_record={user_record} | delete_kb={delete_kb} | msg_type={msg_type} | push_index={push_index} live={live}')
+
     if not msg:
 
         if live is True:
