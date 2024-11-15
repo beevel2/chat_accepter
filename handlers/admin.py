@@ -887,7 +887,8 @@ async def wait_get_buttons_command(
                     "data": _state['data'],
                     "buttons": buttons
                 },
-            'channel_id': _state['channel_id'],
+            'channel_id': (await db.get_channel_by_id(_state['channel_id']))['tg_id'],
+            'channel_db_id': _state['channel_id'],
             'users': _users_for_mass_send,
             'hour': _h,
             'minutes': _m
