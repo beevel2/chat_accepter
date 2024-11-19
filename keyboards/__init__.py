@@ -282,6 +282,15 @@ async def user_push_kb(button_text, channel_id, push_index):
 
     return kb    
 
+async def user_push_mock_kb(button_text):
+    kb = InlineKeyboardMarkup(row_width=1)
+    for button in button_text:
+        if not button['url']:
+            kb.add(InlineKeyboardButton(text=button['text'], callback_data='mock'))
+        else:
+            kb.add(InlineKeyboardButton(text=button['text'], url=button['url']))
+
+    return kb
 
 def add_lead_again_kb(user_id):
     kb = InlineKeyboardMarkup()

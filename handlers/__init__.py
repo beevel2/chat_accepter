@@ -16,6 +16,7 @@ import re
 
 
 def setup_handlers(dp: Dispatcher):
+    dp.register_callback_query_handler(h_admin.mock_button_handler, lambda c: c.data == 'mock', state='*')
     dp.register_chat_join_request_handler(h.start_command, state='*')
     dp.register_chat_member_handler(h.unsub_handler)
     dp.register_callback_query_handler(h.next_push_handler, lambda c: c.data.startswith('next_push_'), state='*')

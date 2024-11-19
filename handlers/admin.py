@@ -18,8 +18,11 @@ from pyrogram import Client
 from pyrogram.errors import SessionPasswordNeeded, PasswordHashInvalid
 from utils import download_file
 import utils
+from handlers import default as default_handlers
 
 import logging
+
+logger = logging.getLogger(__name__)
 
 clients_dicts = {}
 
@@ -240,23 +243,23 @@ async def del_account(
     query.data = f'channel_{query.data.split("_")[-2]}_{query.data.split("_")[-1]}'
 
 
-async def edit_start_message_command(
-        message: types.Message,
-        state: FSMContext,
-        is_admin: bool
-    ):
-    if not is_admin:
-        return
-    _channel_id = message.text.split('_')[-1]
-    _mes_num = message.text.split('_')[-2]
-    _channel_in_db = await db.get_channel_by_id(int(_channel_id))
-    if not _channel_in_db:
-        await message.answer(f'Канал ID: {_channel_id} - не найден!')
-        return
-    if _mes_num.isdigit and int(_mes_num) in [1, 2, 3]:
-        await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
-        await state.update_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
-        await message.answer('Отправьте сообщение!123')
+# async def edit_start_message_command(
+#         message: types.Message,
+#         state: FSMContext,
+#         is_admin: bool
+#     ):
+#     if not is_admin:
+#         return
+#     _channel_id = message.text.split('_')[-1]
+#     _mes_num = message.text.split('_')[-2]
+#     _channel_in_db = await db.get_channel_by_id(int(_channel_id))
+#     if not _channel_in_db:
+#         await message.answer(f'Канал ID: {_channel_id} - не найден!')
+#         return
+#     if _mes_num.isdigit and int(_mes_num) in [1, 2, 3]:
+#         await state.set_state(AppStates.STATE_MESSAGE2_MESSAGE)
+#         await state.update_data({'message': int(_mes_num), 'channel_id': int(_channel_id)})
+#         await message.answer('Отправьте сообщение!123')
 
 
 async def get_message_command(
@@ -722,7 +725,18 @@ async def wait_edit_channel_id_callback(
     else:
         edit_type = 'bot'
 
-    await query.message.answer('Отправьте сообщение!', reply_markup=await kb.clear_message_kb(channel_id, 1, message_type))
+    channel = await db.get_channel_by_id(channel_id)
+
+    old_msg = channel[message_type] 
+
+    try:
+        await default_handlers.send_start_message(old_msg, chat_id=query.from_user.id, msg_type='push', live=False)
+    except Exception as e:
+        logger.exception('Error sending normal preview')
+        await bot.send_message(chat_id=query.from_user.id, text=f'Произошла ошибка {repr(e)}')
+    
+    await query.message.answer('Старое сообщение представлено выше. Для того чтобы отредактировать его - отправьте новое сообщение', reply_markup=await kb.clear_message_kb(channel_id, 1, message_type))
+    
     await state.set_state(AppStates.STATE_WAIT_MSG)
     await state.update_data({'callback': callback_data})
     await state.update_data({'return_callback': query.data})
@@ -887,7 +901,8 @@ async def wait_get_buttons_command(
                     "data": _state['data'],
                     "buttons": buttons
                 },
-            'channel_id': _state['channel_id'],
+            'channel_id': (await db.get_channel_by_id(_state['channel_id']))['tg_id'],
+            'channel_db_id': _state['channel_id'],
             'users': _users_for_mass_send,
             'hour': _h,
             'minutes': _m
@@ -1342,7 +1357,18 @@ async def edit_push(query: types.CallbackQuery, state: FSMContext):
                             push_id=push_id)
 
     markup = await kb.back_to_pushes_kb(channel_id)
-    await query.message.edit_text(text='Введите сообщение для пуша',
+
+    state_data = await state.get_data()
+
+    push = (await db.fetch_channel_pushes(state_data['channel_id']))[state_data['push_id']]
+    
+    try:
+        await default_handlers.send_start_message(push, chat_id=query.from_user.id, msg_type='push', live=False)
+    except Exception as e:
+        logger.exception('Error sending push preview')
+        await bot.send_message(chat_id=query.from_user.id, text=f'Произошла ошибка {repr(e)}')
+    
+    await query.message.answer(text='Старое сообщение для пуша прелставлено выше. Для того чтобы отредактировать его введите новое сообщение для пуша',
                                   reply_markup=markup)
 
 
@@ -1447,3 +1473,7 @@ async def edit_push_get_button(message: types.Message, state: FSMContext):
     await bot.send_message(chat_id=message.from_user.id,
                            text='Сообщение успешно изменено!',
                            reply_markup=markup)
+    
+
+async def mock_button_handler(query: types.InlineQuery):
+    await query.answer('Это демо-кнопка')

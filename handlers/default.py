@@ -1,5 +1,8 @@
 import asyncio
 from pathlib import Path
+import logging
+
+import logging
 
 from aiogram import types
 from aiogram.dispatcher import FSMContext
@@ -21,16 +24,43 @@ import io
 
 client_pool = []
 
-async def send_start_message(msg, chat_id, user_record, delete_kb=False, msg_type='default', push_index=None):
+logger = logging.getLogger(__name__)
+
+
+async def send_start_message(msg, chat_id, user_record=None, delete_kb=False, msg_type='default', push_index=None, live=True):
+    logger.info(f'entered with params: msg={msg} | chat_id={chat_id} | user_record={user_record} | delete_kb={delete_kb} | msg_type={msg_type} | push_index={push_index} live={live}')
+
+    if not msg:
+
+        if live is True:
+            logger.warning(f'Message COMPLETELY is empty! msg={msg}, chat_id={chat_id}, user_record={user_record}, delete_kb={delete_kb}, msg_type={msg_type}, push_index={push_index}, live={live}')
+        else:
+            await bot.send_message(chat_id=chat_id, text='*пустое сообщение*')
+        return 1
+    
+    data_keys = ['text', 'video_id', 'photos', 'video_note_id', 'voice_id', 'animation_id']
+    if not any([msg['data'].get(key) for key in data_keys]):
+        if live is True:
+            logger.warning(f'Message is empty! msg={msg}, chat_id={chat_id}, user_record={user_record}, delete_kb={delete_kb}, msg_type={msg_type}, push_index={push_index}, live={live}')
+        else:
+            await bot.send_message(chat_id=chat_id, text='*пустое сообщение*')
+
+        return 2
+    
     if delete_kb:
         _kb = kb.ReplyKeyboardRemove()
     elif msg_type == 'default':
         _kb = kb.kb_mass_send(msg['buttons'])
     elif msg_type == 'push':
-        _kb = await kb.user_push_kb(msg['data']['button_text'], msg['channel_id'], push_index)
-    
+        if live is True:
+            _kb = await kb.user_push_kb(msg['data']['button_text'], msg['channel_id'], push_index)
+        else:
+            _kb = await kb.user_push_kb()
     if msg['data']['text']:
-        _text = msg['data']['text'].replace('[NAME]', user_record['first_name']).replace('[SURNAME]', user_record['last_name']).replace('[USERNAME]', user_record['username']) 
+        if user_record:
+            _text = msg['data']['text'].replace('[NAME]', user_record['first_name']).replace('[SURNAME]', user_record['last_name']).replace('[USERNAME]', user_record['username']) 
+        else:
+            _text = msg['data']['text']
     else:
         _text = ''
 
@@ -75,7 +105,7 @@ async def send_start_message(msg, chat_id, user_record, delete_kb=False, msg_typ
     elif _text:
         await bot.send_message(chat_id, text=_text, reply_markup=_kb, parse_mode=types.ParseMode.HTML)
 
-    if msg_type == "push":
+    if msg_type == "push" and live is True:
         for btn in msg['data']['button_text']:
             if btn['url'] == None:
                 break
@@ -265,9 +295,10 @@ async def unsub_handler(chat_member: types.ChatMemberUpdated):
     user_id = chat_member.from_user.id
     channel_tg_id = chat_member.chat.id
 
-    user = await db.get_user(user_id, int(channel_tg_id))
-
     channel = await db.get_channel_by_tg_id(channel_tg_id)
+
+    user = await db.get_user(user_id, int(channel['channel_id']))
+
     pushes = await db.fetch_channel_pushes(channel['channel_id'])
 
     await send_start_message(pushes[0], user_id, user, delete_kb=False, msg_type='push', push_index=0)
