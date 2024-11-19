@@ -730,7 +730,7 @@ async def wait_edit_channel_id_callback(
     old_msg = channel[message_type] 
 
     try:
-        await default_handlers.send_start_message(old_msg, chat_id=query.from_user.id, msg_type='push', live=False)
+        await default_handlers.send_start_message(old_msg, chat_id=query.from_user.id, msg_type='default', live=False)
     except Exception as e:
         logger.exception('Error sending normal preview')
         await bot.send_message(chat_id=query.from_user.id, text=f'Произошла ошибка {repr(e)}')
