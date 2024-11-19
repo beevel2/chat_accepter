@@ -138,7 +138,7 @@ async def create_channel(channel: models.ChannelModel):
 
 async def get_channel_by_id(channel_id: int):
     col = db_connection[COLLECTION_CHANNELS]
-    record = await col.find_one(filter={'channel_id': channel_id})
+    record = await col.find_one(filter={'channel_id': int(channel_id)})
     return record
 
 
