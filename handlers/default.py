@@ -55,7 +55,7 @@ async def send_start_message(msg, chat_id, user_record=None, delete_kb=False, ms
         if live is True:
             _kb = await kb.user_push_kb(msg['data']['button_text'], msg['channel_id'], push_index)
         else:
-            _kb = await kb.user_push_kb()
+            _kb = await kb.user_push_mock_kb(msg['data']['button_text'])
     if msg['data']['text']:
         if user_record:
             _text = msg['data']['text'].replace('[NAME]', user_record['first_name']).replace('[SURNAME]', user_record['last_name']).replace('[USERNAME]', user_record['username']) 
