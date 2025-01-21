@@ -427,7 +427,7 @@ async def mass_send_process_command(
             for _user in user_ids:
                 _kb = kb.kb_mass_send(buttons) if buttons else None
                 try:
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(1/30)
                     if _state_data['photo_id']:
                         await bot.send_photo(
                             _user,
