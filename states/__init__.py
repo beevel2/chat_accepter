@@ -47,3 +47,6 @@ class AppStates(Helper):
     STATE_ADD_LEAD = Item()
 
     STATE_LEAD_STATS = Item()
+
+    STATE_DAY_STATS_GET_DATE = Item()
+    

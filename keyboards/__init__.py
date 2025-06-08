@@ -1,6 +1,8 @@
 from aiogram.types import  InlineKeyboardButton, InlineKeyboardMarkup, \
     ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
+from aiogram_calendar import SimpleCalendar
+
 from db import database as db
 
 import math
@@ -62,7 +64,7 @@ kb_manager = ReplyKeyboardMarkup(
         ],
         [
             KeyboardButton('Статистика')
-        ]
+        ],
     ],
     resize_keyboard=True
 )
@@ -160,6 +162,8 @@ async def make_channel_menu_kb(channel_id: int, page: int):
                                       callback_data=f'set_delay_{page}_{channel_id}'),
                  InlineKeyboardButton(text='Отписка',
                                       callback_data=f'unsub_settings_{channel_id}'),
+                InlineKeyboardButton(text='Статистика по дням',
+                                     callback_data=f'day_stats_start_{channel_id}'),
                  InlineKeyboardButton(text='Удалить канал',
                                       callback_data=f'delete_channel_{page}_{channel_id}'),
                  InlineKeyboardButton(text='🔙 Назад',
@@ -306,3 +310,11 @@ lead_stats_kb.add(InlineKeyboardButton(text='Выбрать дату', callback_
 
 kb_cancel_inline = InlineKeyboardMarkup(row_width=1)
 kb_cancel_inline.add(InlineKeyboardButton(text='Отмена', callback_data='cancel'))
+
+async def make_day_stat_kb(channel_id):
+    kb = await SimpleCalendar().start_calendar()
+    
+    # kb.add(
+    #     InlineKeyboardButton(text='🔙 Назад', callback_data=f'channel_0_{channel_id}')
+    # )
+    return kb

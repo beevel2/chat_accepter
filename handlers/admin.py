@@ -1,10 +1,13 @@
 import asyncio
+import datetime
 from typing import List, Optional
 import io
 
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.utils.exceptions import MessageNotModified
+
+from aiogram_calendar import SimpleCalendar
 
 import db.database as db
 import db.models as models
@@ -1477,3 +1480,83 @@ async def edit_push_get_button(message: types.Message, state: FSMContext):
 
 async def mock_button_handler(query: types.InlineQuery):
     await query.answer('Это демо-кнопка')
+
+
+async def day_stats_start(query: types.CallbackQuery, state: FSMContext):
+    await query.answer()
+    channel_id = int(query.data.split('_')[-1])
+    
+    await state.finish()
+    await state.set_state(AppStates.STATE_DAY_STATS_GET_DATE)
+    await state.update_data(channel_id=channel_id)
+
+    reply_markup = await kb.make_day_stat_kb(channel_id)
+    text = 'Выберите дату:'
+    await query.message.edit_text(
+        text=text,
+        reply_markup=reply_markup
+    )
+
+async def day_stats_process_calendar(query: types.CallbackQuery, state: FSMContext, callback_data: dict):
+    selected, selected_date = await SimpleCalendar().process_selection(query, callback_data)
+    if selected:
+        state_data = await state.get_data()
+        channel_id = state_data['channel_id']
+        await state.finish()
+
+        date = datetime.datetime(year=selected_date.year, month=selected_date.month, day=selected_date.day, hour=23, minute=59)
+        prew_day = selected_date - datetime.timedelta(days=1)
+        prew_date = datetime.datetime(year=prew_day.year, month=prew_day.month, day=prew_day.day, hour=23, minute=59)
+
+        approved_stats = await db.fetch_channel_shapshot_value(
+            channel_id=channel_id,
+            snapshot_type=models.StatSnapshotTypeEnum.APPROVED_REQUESTS,
+            date=date
+        )
+        approved_stats_prew = await db.fetch_channel_shapshot_value(
+            channel_id=channel_id,
+            snapshot_type=models.StatSnapshotTypeEnum.APPROVED_REQUESTS,
+            date=prew_date
+        )
+        
+        user_new_stats = await db.fetch_channel_shapshot_value(
+            channel_id=channel_id,
+            snapshot_type=models.StatSnapshotTypeEnum.USERS_NEW,
+            date=date
+        )
+        user_new_stats_prew = await db.fetch_channel_shapshot_value(
+            channel_id=channel_id,
+            snapshot_type=models.StatSnapshotTypeEnum.USERS_NEW,
+            date=prew_date
+        )
+        
+        user_interacted_stats = await db.fetch_channel_shapshot_value(
+            channel_id=channel_id,
+            snapshot_type=models.StatSnapshotTypeEnum.USERS_INTERACTED,
+            date=date
+        )
+        user_interacted_stats_prew = await db.fetch_channel_shapshot_value(
+            channel_id=channel_id,
+            snapshot_type=models.StatSnapshotTypeEnum.USERS_INTERACTED,
+            date=prew_date
+        )
+        
+        user_banned_stats = await db.fetch_channel_shapshot_value(
+            channel_id=channel_id,
+            snapshot_type=models.StatSnapshotTypeEnum.USERS_BANNED,
+            date=date
+        )
+        user_banned_stats_prew = await db.fetch_channel_shapshot_value(
+            channel_id=channel_id,
+            snapshot_type=models.StatSnapshotTypeEnum.USERS_BANNED,
+            date=prew_date
+        )
+        
+        text = f'Одобрено заявок за день: {approved_stats - approved_stats_prew}\n' \
+               f'Новых пользователей за день: {user_new_stats - user_banned_stats_prew}\n' \
+               f'Взаимодействовали за день: {user_interacted_stats - user_interacted_stats_prew}\n' \
+               f'Заблокировало за день: {user_banned_stats - user_banned_stats_prew}'
+        
+        reply_markup = await kb.make_back_to_channel_menu_kb(channel_id=state_data['channel_id'], page=0)
+
+        await query.message.edit_text(text=text, reply_markup=reply_markup)

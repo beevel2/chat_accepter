@@ -1,7 +1,7 @@
 from datetime import datetime, timezone, timedelta
 
 import settings
-from settings import db_connection, COLLECTION_USER, COLLECTION_MESSAGES, COLLECTION_ADMIN, COLLECTION_CHANNELS, COLLECTION_ACCOUNTS, PYROGRAM_SESSION_PATH, COLLECTION_MANAGERS, COLLECTION_LEADS
+from settings import db_connection, COLLECTION_USER, COLLECTION_MESSAGES, COLLECTION_ADMIN, COLLECTION_CHANNELS, COLLECTION_ACCOUNTS, PYROGRAM_SESSION_PATH, COLLECTION_MANAGERS, COLLECTION_LEADS, COLLECTION_STAT_SNAPSHOTS
 import db.models as models
 import os
 
@@ -408,3 +408,21 @@ async def fetch_lead_count(filter={}):
     col = db_connection[COLLECTION_LEADS]
 
     return await col.count_documents(filter)
+
+
+async def create_stat_snapshot(stat_snapshot: models.StatSnapshotModel):
+    col = db_connection[COLLECTION_STAT_SNAPSHOTS]
+    await col.insert_one(stat_snapshot.dict())
+
+
+async def fetch_channel_shapshot_value(channel_id: int, snapshot_type: str, date: datetime.date):
+    col = db_connection[COLLECTION_STAT_SNAPSHOTS]
+    data = await col.find_one({"channel_id": int(channel_id), "date": date, "type": snapshot_type})
+    if data:
+        return data['value']
+    else:
+        return 0
+
+async def get_all_channels_generator():
+    col = db_connection[COLLECTION_CHANNELS]
+    return col.find({})
