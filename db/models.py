@@ -1,6 +1,6 @@
+from datetime import datetime, timezone, date
+from enum import Enum
 from typing import Optional, List
-
-from datetime import datetime, timezone
 
 from pydantic import BaseModel, Field
 
@@ -74,4 +74,16 @@ class MessageModel(BaseModel):
 class PushModel(BaseModel):
     data: MessageModel = MessageModel()
     channel_id: int
-    
+
+
+class StatSnapshotTypeEnum(str, Enum):
+    APPROVED_REQUESTS = "APPROVED_REQUESTS"
+    USERS_NEW = "USERS_NEW"
+    USERS_INTERACTED = "USERS_INTERACTED"
+    USERS_BANNED = "USERS_BANNED"
+
+class StatSnapshotModel(BaseModel):
+    date: datetime
+    channel_id: int
+    type: StatSnapshotTypeEnum
+    value: int

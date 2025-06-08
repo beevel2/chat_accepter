@@ -42,6 +42,7 @@ COLLECTION_CHANNELS = 'channels'
 COLLECTION_PUSHES = 'pushes'
 COLLECTION_MANAGERS = 'managers'
 COLLECTION_LEADS = 'leads'
+COLLECTION_STAT_SNAPSHOTS = 'stat_snapshots'
 
 allowed_updates = ['chat_member', 'my_chat_member', 'chat_join_request', 'callback_query', 'message']
 

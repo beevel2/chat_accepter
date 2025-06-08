@@ -225,4 +225,8 @@ def setup_handlers(dp: Dispatcher):
         lambda call: call.data.startswith('comfirm_channel_del_')
     )
 
+    # Статистика по дням
+    dp.register_callback_query_handler(h_admin.day_stats_start, lambda call: call.data.startswith('day_stats_start_'), state='*')
+    dp.register_callback_query_handler(h_admin.day_stats_process_calendar, simple_cal_callback.filter(), state=[AppStates.STATE_DAY_STATS_GET_DATE])
+
     dp.register_message_handler(h.user_send_message_command)
