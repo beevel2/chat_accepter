@@ -70,7 +70,7 @@ async def capture_all_stat_snapshots():
 
 async def add_scheduler_tasks(_ = None):
     moscow_tz = pytz.timezone('Europe/Moscow')
-    scheduler.add_job(capture_all_stat_snapshots, trigger=CronTrigger(hour=20, minute=34, timezone=moscow_tz))
+    scheduler.add_job(capture_all_stat_snapshots, trigger=CronTrigger(hour=23, minute=59, timezone=moscow_tz))
     
     data = await db.get_all_channels_id_and_user_id_mass_send()
     for d in data:
