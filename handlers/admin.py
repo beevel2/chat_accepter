@@ -1503,49 +1503,69 @@ async def day_stats_process_calendar(query: types.CallbackQuery, state: FSMConte
         state_data = await state.get_data()
         channel_id = state_data['channel_id']
         await state.finish()
-
+    
+        today = datetime.datetime.today()
         date = datetime.datetime(year=selected_date.year, month=selected_date.month, day=selected_date.day, hour=23, minute=59)
+        date_is_today = date.year == today.year and date.month == today.month and date.day == today.day
+
+        if date_is_today:
+            channel = await db.get_channel_by_id(channel_id)
+            stats = await db.get_channel_stats(channel_id)
+
         prew_day = selected_date - datetime.timedelta(days=1)
         prew_date = datetime.datetime(year=prew_day.year, month=prew_day.month, day=prew_day.day, hour=23, minute=59)
 
-        approved_stats = await db.fetch_channel_shapshot_value(
-            channel_id=channel_id,
-            snapshot_type=models.StatSnapshotTypeEnum.APPROVED_REQUESTS,
-            date=date
-        )
+
+        if date_is_today:
+            approved_stats = channel["requests_accepted"]
+        else:
+            approved_stats = await db.fetch_channel_shapshot_value(
+                channel_id=channel_id,
+                snapshot_type=models.StatSnapshotTypeEnum.APPROVED_REQUESTS,
+                date=date
+            )
         approved_stats_prew = await db.fetch_channel_shapshot_value(
             channel_id=channel_id,
             snapshot_type=models.StatSnapshotTypeEnum.APPROVED_REQUESTS,
             date=prew_date
         )
         
-        user_new_stats = await db.fetch_channel_shapshot_value(
-            channel_id=channel_id,
-            snapshot_type=models.StatSnapshotTypeEnum.USERS_NEW,
-            date=date
-        )
+        if date_is_today:
+            user_new_stats = stats['total']
+        else:
+            user_new_stats = await db.fetch_channel_shapshot_value(
+                channel_id=channel_id,
+                snapshot_type=models.StatSnapshotTypeEnum.USERS_NEW,
+                date=date
+            )
         user_new_stats_prew = await db.fetch_channel_shapshot_value(
             channel_id=channel_id,
             snapshot_type=models.StatSnapshotTypeEnum.USERS_NEW,
             date=prew_date
         )
         
-        user_interacted_stats = await db.fetch_channel_shapshot_value(
-            channel_id=channel_id,
-            snapshot_type=models.StatSnapshotTypeEnum.USERS_INTERACTED,
-            date=date
-        )
+        if date_is_today:
+            user_interacted_stats = stats['interacted']
+        else:
+            user_interacted_stats = await db.fetch_channel_shapshot_value(
+                channel_id=channel_id,
+                snapshot_type=models.StatSnapshotTypeEnum.USERS_INTERACTED,
+                date=date
+            )
         user_interacted_stats_prew = await db.fetch_channel_shapshot_value(
             channel_id=channel_id,
             snapshot_type=models.StatSnapshotTypeEnum.USERS_INTERACTED,
             date=prew_date
         )
         
-        user_banned_stats = await db.fetch_channel_shapshot_value(
-            channel_id=channel_id,
-            snapshot_type=models.StatSnapshotTypeEnum.USERS_BANNED,
-            date=date
-        )
+        if date_is_today:
+            user_banned_stats = stats['banned']
+        else:
+            user_banned_stats = await db.fetch_channel_shapshot_value(
+                channel_id=channel_id,
+                snapshot_type=models.StatSnapshotTypeEnum.USERS_BANNED,
+                date=date
+            )
         user_banned_stats_prew = await db.fetch_channel_shapshot_value(
             channel_id=channel_id,
             snapshot_type=models.StatSnapshotTypeEnum.USERS_BANNED,
@@ -1553,7 +1573,7 @@ async def day_stats_process_calendar(query: types.CallbackQuery, state: FSMConte
         )
         
         text = f'Одобрено заявок за день: {approved_stats - approved_stats_prew}\n' \
-               f'Новых пользователей за день: {user_new_stats - user_banned_stats_prew}\n' \
+               f'Новых пользователей за день: {user_new_stats - user_new_stats_prew}\n' \
                f'Взаимодействовали за день: {user_interacted_stats - user_interacted_stats_prew}\n' \
                f'Заблокировало за день: {user_banned_stats - user_banned_stats_prew}'
         
